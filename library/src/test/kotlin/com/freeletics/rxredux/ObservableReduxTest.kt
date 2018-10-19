@@ -3,6 +3,8 @@ package com.freeletics.rxredux
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
+import kotlinx.coroutines.experimental.channels.filter
+import kotlinx.coroutines.experimental.channels.map
 import org.junit.Assert
 import org.junit.Test
 
@@ -12,10 +14,12 @@ class ObservableReduxTest {
     fun `SideEffects react on upstream Actions but Reducer Reacts first`() {
         val inputs = listOf("InputAction1", "InputAction2")
         val inputActions = Observable.fromIterable(inputs)
-        val sideEffect1: SideEffect<String, String> =
-            { actions, state -> actions.filter { inputs.contains(it) }.map { it + "SideEffect1" } }
-        val sideEffect2: SideEffect<String, String> =
-            { actions, state -> actions.filter { inputs.contains(it) }.map { it + "SideEffect2" } }
+        val sideEffect1: SideEffect<String, String> = { actions, state ->
+            actions.filter { inputs.contains(it) }.map { it + "SideEffect1" }
+        }
+        val sideEffect2: SideEffect<String, String> = { actions, state ->
+            actions.filter { inputs.contains(it) }.map { it + "SideEffect2" }
+        }
 
         inputActions
             .reduxStore(
@@ -74,14 +78,21 @@ class ObservableReduxTest {
         var outputCompleted = false
 
         val sideEffect1: SideEffect<String, String> = { actions, state ->
-            actions.filter { it == dummyAction }.map { "SideEffectAction1" }
-                .doOnDispose { disposedSideffectsCount++ }
+            try {
+                actions.filter { it == dummyAction }.map { "SideEffectAction1" }
+            } finally {
+                disposedSideffectsCount++
+            }
         }
 
 
         val sideEffect2: SideEffect<String, String> = { actions, state ->
-            actions.filter { it == dummyAction }.map { "SideEffectAction2" }
-                .doOnDispose { disposedSideffectsCount++ }
+            try {
+                actions.filter { it == dummyAction }.map { "SideEffectAction2" }
+            } finally {
+                disposedSideffectsCount++
+            }
+
         }
 
         val disposable = upstream
@@ -124,23 +135,13 @@ class ObservableReduxTest {
 
     @Test
     fun `SideEffect that returns no Action is supported`() {
-
-        fun returnNoActionEffect(
-            actions: Observable<String>,
-            accessor: StateAccessor<String>
-        ): Observable<String> = actions.flatMap {
-            println("Doing something with $it")
-            Observable.empty<String>()
-        }
-
-
         val action1 = "Action1"
         val action2 = "Action2"
         val action3 = "Action3"
         val initial = "Initial"
 
         Observable.just(action1, action2, action3)
-            .reduxStore("Initial", sideEffects = listOf(::returnNoActionEffect)) { state, action ->
+            .reduxStore("Initial", sideEffects = emptyList()) { state, action ->
                 state + action
             }
             .test()

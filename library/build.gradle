@@ -16,6 +16,8 @@ if (gradle.ext.isCiServer) {
 dependencies {
     implementation libraries.kotlinStdlib
     implementation libraries.rxJava
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:0.30.2'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-rx2:0.30.2'
 
     testImplementation testLibraries.junit
 }
@@ -26,6 +28,11 @@ targetCompatibility = "1.7"
 dokka {
     outputFormat = 'html'
     outputDirectory = "$buildDir/javadoc"
+}
+kotlin {
+    experimental {
+        coroutines "enable"
+    }
 }
 
 

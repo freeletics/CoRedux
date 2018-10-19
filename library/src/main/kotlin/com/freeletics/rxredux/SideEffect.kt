@@ -1,8 +1,6 @@
 package com.freeletics.rxredux
 
-import io.reactivex.Observable
-import io.reactivex.ObservableSource
-
+import kotlinx.coroutines.experimental.channels.ReceiveChannel
 
 /**
  * It is a function which takes a stream of actions and returns a stream of actions. Actions in, actions out
@@ -12,7 +10,7 @@ import io.reactivex.ObservableSource
  * @param state [StateAccessor] to get the latest state of the state machine
  */
 // TODO find better name?
-typealias SideEffect<S, A> = (actions: Observable<A>, state: StateAccessor<S>) -> Observable<out A>
+typealias SideEffect<S, A> = suspend (actions: ReceiveChannel<A>, state: StateAccessor<S>) -> ReceiveChannel<A>
 
 
 /**

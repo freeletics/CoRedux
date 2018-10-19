@@ -8,6 +8,11 @@ import io.reactivex.observers.SerializedObserver
 import io.reactivex.plugins.RxJavaPlugins
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.Subject
+import kotlinx.coroutines.experimental.CoroutineScope
+import kotlinx.coroutines.experimental.Dispatchers
+import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.experimental.rx2.openSubscription
+import kotlin.coroutines.experimental.CoroutineContext
 
 /**
  * A ReduxStore is a RxJava based implementation of Redux and redux-observable.js.org.
@@ -86,7 +91,9 @@ private class ObservableReduxStore<S: Any, A: Any>(
      * The Reducer. Takes the current state and an action and computes a new state.
      */
     private val reducer: Reducer<S, A>
-) : Observable<S>() {
+) : Observable<S>(), CoroutineScope {
+
+    override val coroutineContext: CoroutineContext = Dispatchers.Unconfined
 
     override fun subscribeActual(observer: Observer<in S>) {
         val disposables = CompositeDisposable()
@@ -106,25 +113,14 @@ private class ObservableReduxStore<S: Any, A: Any>(
 
         actionsSubject.subscribe(storeObserver) // This will make the reducer run on each action
 
-        // TODO should SideEffects be composed with ObservableTransformer?
-        // That would be the more idiomatic way I guess.
         sideEffects.forEach { sideEffect ->
-            disposables += sideEffect(actionsSubject, storeObserver::currentState)
-                .subscribe({ action ->
-                    // Loop the "output" actions of a SideEffect back into the actions stream
+            val actionsChannel = actionsSubject.openSubscription()
+            launch {
+                val actionOutput = sideEffect(actionsChannel, storeObserver::currentState)
+                for(action in actionOutput) {
                     actionsSubject.onNext(action)
-
-                    // TODO how to get this run on the origin ReduxStore subscribeOn() Scheduler?
-                    // I don't think that this is possible to implement. May need some scheduler
-                    // passed in as parameter similar to what Observable.timer() does.
-
-                }, { error ->
-                    actionsSubject.onError(error) // Error in SideEffect causes whole stream to fail
-                }, {
-                    // Swallow onComplete because just if one SideEffect reaches onComplete we don't want to make
-                    // everything incl. ReduxStore and other SideEffects reach onComplete
                 }
-                )
+            }
         }
 
         upstreamActionsObservable.subscribe(
