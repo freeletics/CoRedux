@@ -52,6 +52,8 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
                 System.err.println("New output state: $currentState")
                 output.send(currentState)
             }
+        } catch (e: Exception) {
+            output.close(ReducerException(currentState, Unit, e)) // TODO: pass somehow action
         } finally {
             System.err.println("Closing output channel")
             output.close()
@@ -61,8 +63,12 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     // Starting side-effects coroutines
     sideEffects.forEach { sideEffect ->
         GlobalScope.launch(coroutineContext) {
-            sideEffect(actionsChannel.openSubscription()) { return@sideEffect currentState }
-                .toChannel(actionsChannel)
+            try {
+                sideEffect(actionsChannel.openSubscription()) { return@sideEffect currentState }
+                    .toChannel(actionsChannel)
+            } catch (e: Exception) {
+                actionsChannel.close(e)
+            }
         }
     }
 
@@ -71,6 +77,8 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     GlobalScope.launch(coroutineContext) {
         try {
             upstreamChannel.toChannel(actionsChannel)
+        } catch (e: Exception) {
+            actionsChannel.close(e)
         } finally {
             actionsChannel.close()
         }
