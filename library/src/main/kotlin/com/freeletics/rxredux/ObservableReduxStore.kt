@@ -48,15 +48,19 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     GlobalScope.launch(coroutineContext) {
         try {
             for (action in actionsChannel.openSubscription()) {
-                currentState = reducer(currentState, action)
-                System.err.println("New output state: $currentState")
+                try {
+                    currentState = reducer(currentState, action)
+                } catch (e: Throwable) {
+                    output.close(ReducerException(currentState, action, e))
+                }
                 output.send(currentState)
             }
         } catch (e: Exception) {
-            output.close(ReducerException(currentState, Unit, e)) // TODO: pass somehow action
+            if (!output.isClosedForSend) {
+                output.close(e)
+            }
         } finally {
-            System.err.println("Closing output channel")
-            output.close()
+            if (!output.isClosedForSend) output.close()
         }
     }
 
@@ -80,6 +84,7 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
         } catch (e: Exception) {
             actionsChannel.close(e)
         } finally {
+            upstreamChannel.cancel()
             actionsChannel.close()
         }
     }
