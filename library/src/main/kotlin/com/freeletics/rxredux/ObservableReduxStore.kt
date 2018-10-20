@@ -39,6 +39,11 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     val actionsChannel = BroadcastChannel<A>(1)
     var currentState = initialState
 
+    output.invokeOnClose {
+        upstreamChannel.cancel()
+        actionsChannel.close()
+    }
+
     // Sending initial state
     coroutineScope.launch(context = Dispatchers.Unconfined) {
         output.send(currentState)
