@@ -1,5 +1,6 @@
 package com.freeletics.rxredux
 
+import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.Dispatchers
 import kotlinx.coroutines.experimental.GlobalScope
 import kotlinx.coroutines.experimental.channels.BroadcastChannel
@@ -7,7 +8,6 @@ import kotlinx.coroutines.experimental.channels.Channel
 import kotlinx.coroutines.experimental.channels.ReceiveChannel
 import kotlinx.coroutines.experimental.channels.toChannel
 import kotlinx.coroutines.experimental.launch
-import kotlin.coroutines.experimental.CoroutineContext
 
 /**
  * A ReduxStore is a RxJava based implementation of Redux and redux-observable.js.org.
@@ -31,7 +31,7 @@ import kotlin.coroutines.experimental.CoroutineContext
 fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     initialState: S,
     sideEffects: List<SideEffect<S, A>>,
-    coroutineContext: CoroutineContext = Dispatchers.Unconfined,
+    coroutineScope: CoroutineScope = GlobalScope,
     reducer: Reducer<S, A>
 ): ReceiveChannel<S> {
     val output = Channel<S>()
@@ -40,12 +40,12 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     var currentState = initialState
 
     // Sending initial state
-    GlobalScope.launch(coroutineContext ) {
+    coroutineScope.launch(context = Dispatchers.Unconfined) {
         output.send(currentState)
     }
 
     // Starting reducer coroutine
-    GlobalScope.launch(coroutineContext) {
+    coroutineScope.launch(context = Dispatchers.Unconfined) {
         try {
             for (action in actionsChannel.openSubscription()) {
                 try {
@@ -66,7 +66,7 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
 
     // Starting side-effects coroutines
     sideEffects.forEach { sideEffect ->
-        GlobalScope.launch(coroutineContext) {
+        coroutineScope.launch(context = Dispatchers.Unconfined) {
             try {
                 sideEffect(actionsChannel.openSubscription()) { return@sideEffect currentState }
                     .toChannel(actionsChannel)
@@ -76,15 +76,13 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
         }
     }
 
-
     // Start receiving items from upstream
-    GlobalScope.launch(coroutineContext) {
+    coroutineScope.launch {
         try {
             upstreamChannel.toChannel(actionsChannel)
         } catch (e: Exception) {
             actionsChannel.close(e)
         } finally {
-            upstreamChannel.cancel()
             actionsChannel.close()
         }
     }
@@ -101,11 +99,11 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
 fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     initialState: S,
     vararg sideEffects: SideEffect<S, A>,
-    coroutineContext: CoroutineContext = Dispatchers.Unconfined,
+    coroutineScope: CoroutineScope = GlobalScope,
     reducer: Reducer<S, A>
 ): ReceiveChannel<S> = reduxStore(
     initialState = initialState,
     sideEffects = sideEffects.toList(),
     reducer = reducer,
-    coroutineContext = coroutineContext
+    coroutineScope = coroutineScope
 )

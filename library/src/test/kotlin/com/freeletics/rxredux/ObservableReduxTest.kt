@@ -3,15 +3,19 @@ package com.freeletics.rxredux
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
+import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.Dispatchers
 import kotlinx.coroutines.experimental.channels.filter
 import kotlinx.coroutines.experimental.channels.map
+import kotlinx.coroutines.experimental.rx2.asCoroutineDispatcher
 import kotlinx.coroutines.experimental.rx2.asObservable
 import kotlinx.coroutines.experimental.rx2.openSubscription
 import org.junit.Assert
 import org.junit.Test
+import kotlin.coroutines.experimental.CoroutineContext
 
-class ObservableReduxTest {
+class ObservableReduxTest : CoroutineScope {
+    override val coroutineContext: CoroutineContext = Dispatchers.Unconfined
 
     @Test
     fun `SideEffects react on upstream Actions but Reducer Reacts first`() {
@@ -28,7 +32,8 @@ class ObservableReduxTest {
             .openSubscription()
             .reduxStore(
                 initialState = "InitialState",
-                sideEffects = listOf(sideEffect1, sideEffect2)
+                sideEffects = listOf(sideEffect1, sideEffect2),
+                coroutineScope = this
             ) { state, action ->
                 action
             }
@@ -54,7 +59,8 @@ class ObservableReduxTest {
             .openSubscription()
             .reduxStore(
                 "InitialState",
-                sideEffects = emptyList()
+                sideEffects = emptyList(),
+                coroutineScope = this
             ) { state, action -> state }
             .asObservable(Dispatchers.Unconfined)
             .test()
@@ -71,7 +77,8 @@ class ObservableReduxTest {
             .openSubscription()
             .reduxStore(
                 "InitialState",
-                sideEffects = emptyList()
+                sideEffects = emptyList(),
+                coroutineScope = this
             ) { state, action -> state }
             .asObservable(Dispatchers.Unconfined)
             .test()
@@ -113,7 +120,7 @@ class ObservableReduxTest {
             ) { state, action ->
                 action
             }
-            .asObservable(Dispatchers.Unconfined)
+            .asObservable(Schedulers.io().asCoroutineDispatcher())
             .subscribeOn(Schedulers.io())
             .subscribe(
                 { outputedStates.add(it) },
@@ -127,7 +134,7 @@ class ObservableReduxTest {
 
         Thread.sleep(100)        // I know it's bad, but it does the job
 
-        // Dispose the whole cain
+        // Dispose the whole chain
         disposable.dispose()
 
         // Verify everything is fine
@@ -155,7 +162,10 @@ class ObservableReduxTest {
 
         Observable.just(action1, action2, action3)
             .openSubscription()
-            .reduxStore("Initial", sideEffects = emptyList()) { state, action ->
+            .reduxStore("Initial",
+                sideEffects = emptyList(),
+                coroutineScope = this
+            ) { state, action ->
                 state + action
             }
             .asObservable(Dispatchers.Unconfined)
@@ -177,7 +187,11 @@ class ObservableReduxTest {
         Observable
             .just("Action1")
             .openSubscription()
-            .reduxStore("Initial", sideEffects = emptyList()) { _, _ ->
+            .reduxStore(
+                "Initial",
+                sideEffects = emptyList(),
+                coroutineScope = this
+            ) { _, _ ->
                 throw testException
             }
             .asObservable(Dispatchers.Unconfined)
