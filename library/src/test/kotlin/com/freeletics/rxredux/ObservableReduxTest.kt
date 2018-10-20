@@ -3,8 +3,11 @@ package com.freeletics.rxredux
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
+import kotlinx.coroutines.experimental.Dispatchers
 import kotlinx.coroutines.experimental.channels.filter
 import kotlinx.coroutines.experimental.channels.map
+import kotlinx.coroutines.experimental.rx2.asObservable
+import kotlinx.coroutines.experimental.rx2.openSubscription
 import org.junit.Assert
 import org.junit.Test
 
@@ -22,12 +25,14 @@ class ObservableReduxTest {
         }
 
         inputActions
+            .openSubscription()
             .reduxStore(
                 initialState = "InitialState",
                 sideEffects = listOf(sideEffect1, sideEffect2)
             ) { state, action ->
                 action
             }
+            .asObservable(Dispatchers.Unconfined)
             .test()
             .assertValues(
                 "InitialState",
@@ -45,10 +50,13 @@ class ObservableReduxTest {
     @Test
     fun `Empty upstream just emits initial state and completes`() {
         val upstream: Observable<String> = Observable.empty()
-        upstream.reduxStore(
-            "InitialState",
-            sideEffects = emptyList()
-        ) { state, action -> state }
+        upstream
+            .openSubscription()
+            .reduxStore(
+                "InitialState",
+                sideEffects = emptyList()
+            ) { state, action -> state }
+            .asObservable(Dispatchers.Unconfined)
             .test()
             .assertNoErrors()
             .assertValues("InitialState")
@@ -59,10 +67,13 @@ class ObservableReduxTest {
     fun `Error upstream just emits initial state and run in onError`() {
         val exception = Exception("FakeException")
         val upstream: Observable<String> = Observable.error<String>(exception)
-        upstream.reduxStore(
-            "InitialState",
-            sideEffects = emptyList()
-        ) { state, action -> state }
+        upstream
+            .openSubscription()
+            .reduxStore(
+                "InitialState",
+                sideEffects = emptyList()
+            ) { state, action -> state }
+            .asObservable(Dispatchers.Unconfined)
             .test()
             .assertValues("InitialState")
             .assertError(exception)
@@ -96,11 +107,13 @@ class ObservableReduxTest {
         }
 
         val disposable = upstream
+            .openSubscription()
             .reduxStore(
                 "InitialState", sideEffect1, sideEffect2
             ) { state, action ->
                 action
             }
+            .asObservable(Dispatchers.Unconfined)
             .subscribeOn(Schedulers.io())
             .subscribe(
                 { outputedStates.add(it) },
@@ -141,9 +154,11 @@ class ObservableReduxTest {
         val initial = "Initial"
 
         Observable.just(action1, action2, action3)
+            .openSubscription()
             .reduxStore("Initial", sideEffects = emptyList()) { state, action ->
                 state + action
             }
+            .asObservable(Dispatchers.Unconfined)
             .test()
             .assertValues(
                 initial,
@@ -152,6 +167,7 @@ class ObservableReduxTest {
                 initial + action1 + action2 + action3
             )
             .assertNoErrors()
+            .assertComplete()
     }
 
     @Test
@@ -159,12 +175,14 @@ class ObservableReduxTest {
         val testException = Exception("test")
 
         Observable
-                .just("Action1")
-                .reduxStore("Initial", sideEffects = emptyList()) { _, _ ->
-                    throw testException
-                }
-                .test()
-                .assertError(ReducerException::class.java)
-                .assertErrorMessage("Exception was thrown by reducer, state = 'Initial', action = 'Action1'")
+            .just("Action1")
+            .openSubscription()
+            .reduxStore("Initial", sideEffects = emptyList()) { _, _ ->
+                throw testException
+            }
+            .asObservable(Dispatchers.Unconfined)
+            .test()
+            .assertError(ReducerException::class.java)
+            .assertErrorMessage("Exception was thrown by reducer, state = 'Initial', action = 'Action1'")
     }
 }
