@@ -2,11 +2,11 @@ package com.freeletics.rxredux
 
 import kotlinx.coroutines.experimental.Dispatchers
 import kotlinx.coroutines.experimental.GlobalScope
+import kotlinx.coroutines.experimental.channels.BroadcastChannel
 import kotlinx.coroutines.experimental.channels.Channel
 import kotlinx.coroutines.experimental.channels.ReceiveChannel
 import kotlinx.coroutines.experimental.channels.toChannel
 import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.runBlocking
 import kotlin.coroutines.experimental.CoroutineContext
 
 /**
@@ -36,27 +36,43 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
 ): ReceiveChannel<S> {
     val output = Channel<S>()
     val upstreamChannel = this
-    val actionsChannel = Channel<A>()
+    val actionsChannel = BroadcastChannel<A>(1)
     var currentState = initialState
 
-    runBlocking {
+    // Sending initial state
+    GlobalScope.launch(coroutineContext ) {
         output.send(currentState)
     }
 
+    // Starting reducer coroutine
     GlobalScope.launch(coroutineContext) {
-        upstreamChannel.toChannel(actionsChannel)
-    }
-
-    sideEffects.forEach { sideEffect ->
-        GlobalScope.launch(coroutineContext) {
-            sideEffect(actionsChannel) { return@sideEffect currentState }.toChannel(actionsChannel)
+        try {
+            for (action in actionsChannel.openSubscription()) {
+                currentState = reducer(currentState, action)
+                System.err.println("New output state: $currentState")
+                output.send(currentState)
+            }
+        } finally {
+            System.err.println("Closing output channel")
+            output.close()
         }
     }
 
+    // Starting side-effects coroutines
+    sideEffects.forEach { sideEffect ->
+        GlobalScope.launch(coroutineContext) {
+            sideEffect(actionsChannel.openSubscription()) { return@sideEffect currentState }
+                .toChannel(actionsChannel)
+        }
+    }
+
+
+    // Start receiving items from upstream
     GlobalScope.launch(coroutineContext) {
-        for (action in actionsChannel) {
-            currentState = reducer(currentState, action)
-            output.send(currentState)
+        try {
+            upstreamChannel.toChannel(actionsChannel)
+        } finally {
+            actionsChannel.close()
         }
     }
 
