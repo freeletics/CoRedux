@@ -35,12 +35,11 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     reducer: Reducer<S, A>
 ): ReceiveChannel<S> {
     val output = Channel<S>()
-    val upstreamChannel = this
     val actionsChannel = BroadcastChannel<A>(1 + sideEffects.size)
     var currentState = initialState
 
     output.invokeOnClose {
-        upstreamChannel.cancel()
+        this@reduxStore.cancel()
         actionsChannel.close()
     }
 
@@ -82,9 +81,9 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     }
 
     // Start receiving items from upstream
-    coroutineScope.launch {
+    coroutineScope.launch(context = Dispatchers.Unconfined) {
         try {
-            upstreamChannel.toChannel(actionsChannel)
+            this@reduxStore.toChannel(actionsChannel)
         } catch (e: Exception) {
             if (!actionsChannel.isClosedForSend) actionsChannel.close(e)
         } finally {
