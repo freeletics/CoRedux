@@ -36,7 +36,7 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
 ): ReceiveChannel<S> {
     val output = Channel<S>()
     val upstreamChannel = this
-    val actionsChannel = BroadcastChannel<A>(1)
+    val actionsChannel = BroadcastChannel<A>(1 + sideEffects.size)
     var currentState = initialState
 
     output.invokeOnClose {
@@ -76,7 +76,7 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
                 sideEffect(actionsChannel.openSubscription()) { return@sideEffect currentState }
                     .toChannel(actionsChannel)
             } catch (e: Exception) {
-                actionsChannel.close(e)
+                if (!actionsChannel.isClosedForSend) actionsChannel.close(e)
             }
         }
     }
@@ -86,9 +86,9 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
         try {
             upstreamChannel.toChannel(actionsChannel)
         } catch (e: Exception) {
-            actionsChannel.close(e)
+            if (!actionsChannel.isClosedForSend) actionsChannel.close(e)
         } finally {
-            actionsChannel.close()
+            if (!actionsChannel.isClosedForSend) actionsChannel.close()
         }
     }
 
