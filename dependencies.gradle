@@ -20,6 +20,7 @@ ext.versions = [
         okhttp                 : '3.11.0',
 
         retrofit               : '2.4.0',
+        retrofitCoroutines     : '1.0.0',
         moshi                  : '1.6.0',
         viewModel              : '1.1.1',
         timber                 : '4.7.1',
@@ -51,6 +52,7 @@ ext.libraries = [
         kotlinReflect         : "org.jetbrains.kotlin:kotlin-reflect:$versions.kotlin",
         coroutinesCore        : "org.jetbrains.kotlinx:kotlinx-coroutines-core:$versions.coroutines",
         coroutinesRx2         : "org.jetbrains.kotlinx:kotlinx-coroutines-rx2:$versions.coroutines",
+        coroutinesAndroid     : "org.jetbrains.kotlinx:kotlinx-coroutines-android:$versions.coroutines",
         moshi                 : "com.squareup.moshi:moshi:$versions.moshi",
         moshiKotlin           : "com.squareup.moshi:moshi-kotlin:$versions.moshi",
         moshiCodeGen          : "com.squareup.moshi:moshi-kotlin-codegen:$versions.moshi",
@@ -66,6 +68,7 @@ ext.libraries = [
         retrofit              : "com.squareup.retrofit2:retrofit:$versions.retrofit",
         retrofitMoshi         : "com.squareup.retrofit2:converter-moshi:$versions.retrofit",
         retrofitRxJava        : "com.squareup.retrofit2:adapter-rxjava2:$versions.retrofit",
+        retrofitCoroutines    : "com.jakewharton.retrofit:retrofit2-kotlin-coroutines-experimental-adapter:$versions.retrofitCoroutines",
         okhttp                : "com.squareup.okhttp3:okhttp:$versions.okhttp"
 ]
 

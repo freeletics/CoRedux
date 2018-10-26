@@ -52,6 +52,12 @@ android {
     }
 }
 
+kotlin {
+    experimental {
+        coroutines "enable"
+    }
+}
+
 dependencies {
     implementation libraries.kotlinStdlib
     implementation supportLibraries.appCompat
@@ -70,6 +76,8 @@ dependencies {
     implementation libraries.okhttp
     implementation libraries.moshiKotlin
     implementation libraries.moshi
+    implementation libraries.retrofitCoroutines
+    implementation libraries.coroutinesAndroid
 
     kapt libraries.moshiCodeGen
     implementation libraries.moshi

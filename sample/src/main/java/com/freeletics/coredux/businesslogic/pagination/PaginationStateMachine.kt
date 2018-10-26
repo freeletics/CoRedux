@@ -1,13 +1,21 @@
 package com.freeletics.coredux.businesslogic.pagination
 
-import com.freeletics.coredux.StateAccessor
+import com.freeletics.coredux.SideEffect
 import com.freeletics.coredux.businesslogic.github.GithubApiFacade
 import com.freeletics.coredux.businesslogic.github.GithubRepository
 import com.freeletics.coredux.businesslogic.pagination.PaginationStateMachine.State
-import com.jakewharton.rxrelay2.PublishRelay
-import com.jakewharton.rxrelay2.Relay
-import io.reactivex.Observable
-import io.reactivex.schedulers.Schedulers
+import com.freeletics.coredux.reduxStore
+import kotlinx.coroutines.experimental.Dispatchers
+import kotlinx.coroutines.experimental.GlobalScope
+import kotlinx.coroutines.experimental.async
+import kotlinx.coroutines.experimental.channels.Channel
+import kotlinx.coroutines.experimental.channels.ReceiveChannel
+import kotlinx.coroutines.experimental.channels.distinct
+import kotlinx.coroutines.experimental.channels.filter
+import kotlinx.coroutines.experimental.channels.flatMap
+import kotlinx.coroutines.experimental.channels.map
+import kotlinx.coroutines.experimental.delay
+import kotlinx.coroutines.experimental.launch
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -172,85 +180,107 @@ class PaginationStateMachine @Inject constructor(
         }
     }
 
-
-    val input: Relay<Action> = PublishRelay.create()
-
-    val state: Observable<State> = input
-        .doOnNext { Timber.d("Input Action $it") }
-        .reduxStore(
-            initialState = State.LoadingFirstPageState,
-            sideEffects = listOf(
-                ::loadFirstPageSideEffect,
-                ::loadNextPageSideEffect,
-                ::showAndHideLoadingErrorSideEffect
-            ),
-            reducer = ::reducer
-        )
-        .distinctUntilChanged()
-        .doOnNext { Timber.d("RxStore state $it") }
-
-    /**
-     * Loads the next Page
-     */
-    private fun nextPage(s: State): Observable<Action> {
-        val nextPage = (if (s is ContainsItems) s.page else 0) + 1
-
-        return github.loadNextPage(nextPage)
-            .subscribeOn(Schedulers.io())
-            .toObservable()
-            .map<Action> { result ->
-                PageLoadedAction(
-                    itemsLoaded = result.items,
-                    page = nextPage
-                )
-            }
-            .delay(1, TimeUnit.SECONDS) // Add some delay to make the loading indicator appear,
-            .onErrorReturn { error -> ErrorLoadingPageAction(error, nextPage) }
-            .startWith(StartLoadingNextPage(nextPage))
-    }
-
     /**
      * Load the first Page
      */
-    private fun loadFirstPageSideEffect(
-        actions: Observable<Action>,
-        state: StateAccessor<State>
-    ): Observable<Action> =
-        actions.ofType(Action.LoadFirstPageAction::class.java)
-            .filter { state() !is ContainsItems } // If first page has already been loaded, do nothing
-            .switchMap {
-                nextPage(state())
+    private val loadFirstPageSideEffect: SideEffect<State, Action> = { actions, state ->
+        actions
+            .filter {
+                it is Action.LoadFirstPageAction &&
+                    state() !is ContainsItems
             }
+            .flatMap { nextPage(state()) }
+    }
 
     /**
      * A Side Effect that loads the next page
      */
-    private fun loadNextPageSideEffect(
-        actions: Observable<Action>,
-        state: StateAccessor<State>
-    ): Observable<Action> =
+    private val loadNextPageSideEffect: SideEffect<State, Action> = { actions, state ->
         actions
-            .ofType(Action.LoadNextPageAction::class.java)
-            .switchMap {
+            .filter { it is Action.LoadNextPageAction }
+            .flatMap {
                 nextPage(state())
             }
+    }
 
     /**
      * Shows and hides an error after a given time.
      * In UI a snackbar showing an error message would be shown / hidden respectively
      */
-    private fun showAndHideLoadingErrorSideEffect(
-        actions: Observable<Action>,
-        state: StateAccessor<State>
-    ): Observable<Action> =
-        actions.ofType(ErrorLoadingPageAction::class.java)
-            .filter { it.page > 1 }
-            .switchMap { action ->
-                Observable.timer(3, TimeUnit.SECONDS)
-                    .map<Action> { HideLoadNextPageErrorAction(action.error, action.page) }
-                    .startWith(ShowLoadNextPageErrorAction(action.error, action.page))
+    private val showAndHideLoadingErrorSideEffect: SideEffect<State, Action> = { actions, _ ->
+        actions
+            .filter {
+                it is ErrorLoadingPageAction &&
+                    it.page > 1
             }
+            .flatMap { action ->
+                val output = Channel<Action>()
+                GlobalScope.launch {
+                    val errorAction = action as ErrorLoadingPageAction
+                    output.send(ShowLoadNextPageErrorAction(errorAction.error, errorAction.page))
+                    delay(TimeUnit.SECONDS.toMillis(3))
+                    output.send(HideLoadNextPageErrorAction(errorAction.error, errorAction.page))
+                }
+                output
+            }
+    }
 
+    val input = Channel<Action>()
+
+    val state: ReceiveChannel<State> = input
+        .map {
+            Timber.d("Input Action: $it")
+            it
+        }
+        .reduxStore(
+            initialState = State.LoadingFirstPageState,
+            sideEffects = listOf(
+                loadFirstPageSideEffect,
+                loadNextPageSideEffect,
+                showAndHideLoadingErrorSideEffect
+            ),
+            reducer = ::reducer
+        )
+        .distinct()
+        .map {
+            Timber.d("RxStore state $it")
+            it
+        }
+
+    /**
+     * Loads the next Page
+     */
+    private fun nextPage(s: State): ReceiveChannel<Action> {
+        val output = Channel<Action>()
+        val nextPage = (if (s is ContainsItems) s.page else 0) + 1
+
+        Timber.d("NextPage: sending StartLoadingNextPage action, $nextPage")
+        GlobalScope.launch {
+            output.send(StartLoadingNextPage(nextPage))
+        }
+
+        GlobalScope.launch {
+            delay(TimeUnit.SECONDS.toMillis(1)) // Add some delay to make the loading indicator appear
+            val job = GlobalScope.async(Dispatchers.IO) {
+                github.loadNextPage(nextPage).await()
+            }
+            output.invokeOnClose {
+                Timber.d("Cancelling Github request")
+                job.cancel()
+            }
+            try {
+                val result = job.await()
+                output.send(PageLoadedAction(
+                    itemsLoaded = result.items,
+                    page = nextPage
+                ))
+            } catch (error: Throwable) {
+                Timber.w("Got error $error")
+                output.send(ErrorLoadingPageAction(error, nextPage))
+            }
+        }
+        return output
+    }
 
     /**
      * The state reducer.

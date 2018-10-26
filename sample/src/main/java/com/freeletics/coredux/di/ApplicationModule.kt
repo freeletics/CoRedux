@@ -3,12 +3,12 @@ package com.freeletics.coredux.di
 import com.freeletics.coredux.ViewBindingFactory
 import com.freeletics.coredux.ViewBindingInstantiatorMap
 import com.freeletics.coredux.businesslogic.github.GithubApi
+import com.jakewharton.retrofit2.adapter.kotlin.coroutines.experimental.CoroutineCallAdapterFactory
 import dagger.Module
 import dagger.Provides
 import io.reactivex.Scheduler
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory
 import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
 
@@ -31,7 +31,7 @@ open class ApplicationModule(
             Retrofit.Builder()
                 .client(okHttp)
                 .addConverterFactory(MoshiConverterFactory.create())
-                .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                .addCallAdapterFactory(CoroutineCallAdapterFactory())
                 .baseUrl(baseUrl)
                 .build()
 

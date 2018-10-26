@@ -57,7 +57,9 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
                 } catch (e: Throwable) {
                     output.close(ReducerException(currentState, action, e))
                 }
-                output.send(currentState)
+                coroutineScope.launch(context = Dispatchers.Unconfined) {
+                    output.send(currentState)
+                }
             }
         } catch (e: Exception) {
             if (!output.isClosedForSend) {

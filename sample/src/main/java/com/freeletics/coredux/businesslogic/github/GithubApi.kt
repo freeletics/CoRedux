@@ -1,6 +1,6 @@
 package com.freeletics.coredux.businesslogic.github
 
-import io.reactivex.Single
+import kotlinx.coroutines.experimental.Deferred
 import retrofit2.http.GET
 import retrofit2.http.Query
 
@@ -11,5 +11,5 @@ interface GithubApi {
         @Query("q") query: String,
         @Query("sort") sort: String,
         @Query("page") page: Int
-    ): Single<GithubSearchResults>
+    ): Deferred<GithubSearchResults>
 }
