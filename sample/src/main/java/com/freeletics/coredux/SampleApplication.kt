@@ -4,7 +4,7 @@ import android.app.Application
 import android.view.ViewGroup
 import com.freeletics.coredux.di.ApplicationModule
 import com.freeletics.coredux.di.DaggerApplicationComponent
-import io.reactivex.android.schedulers.AndroidSchedulers
+import kotlinx.coroutines.experimental.Dispatchers
 import timber.log.Timber
 
 open class SampleApplication : Application() {
@@ -22,7 +22,7 @@ open class SampleApplication : Application() {
         builder.applicationModule(
             ApplicationModule(
                 baseUrl = "https://api.github.com",
-                androidScheduler = AndroidSchedulers.mainThread(),
+                androidScheduler = Dispatchers.Main,
                 viewBindingInstantiatorMap = mapOf<Class<*>,
                         ViewBindingInstantiator>(
                     PopularRepositoriesActivity::class.java to { rootView: ViewGroup ->

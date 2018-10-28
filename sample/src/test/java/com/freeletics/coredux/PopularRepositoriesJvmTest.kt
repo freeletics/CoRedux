@@ -1,13 +1,13 @@
 package com.freeletics.coredux
 
 import android.arch.core.executor.testing.InstantTaskExecutorRule
-import com.freeletics.di.TestApplicationModule
 import com.freeletics.coredux.businesslogic.pagination.Action
 import com.freeletics.coredux.businesslogic.pagination.PaginationStateMachine
+import com.freeletics.di.TestApplicationModule
 import io.reactivex.Observable
-import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.ReplaySubject
 import io.reactivex.subjects.Subject
+import kotlinx.coroutines.experimental.Dispatchers
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Rule
 import org.junit.Test
@@ -58,7 +58,7 @@ class PopularRepositoriesJvmTest {
             TestApplicationModule(
                 baseUrl = "http://127.0.0.1:$MOCK_WEB_SERVER_PORT",
                 viewBindingInstantiatorMap = emptyMap(),
-                androidScheduler = Schedulers.trampoline()
+                androidScheduler = Dispatchers.Unconfined
             )
         ).build()
 
@@ -66,7 +66,7 @@ class PopularRepositoriesJvmTest {
             .paginationStateMachine()
 
         val viewModel =
-            PopularRepositoriesViewModel(paginationStateMachine, Schedulers.trampoline())
+            PopularRepositoriesViewModel(paginationStateMachine, Dispatchers.Unconfined)
         val screen = JvmScreen(viewModel)
         viewModel.state.observeForever {
             screen.stateSubject.onNext(it!!)

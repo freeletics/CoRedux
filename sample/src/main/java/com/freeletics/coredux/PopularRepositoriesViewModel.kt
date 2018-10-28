@@ -8,11 +8,10 @@ import com.freeletics.coredux.businesslogic.pagination.PaginationStateMachine
 import com.freeletics.coredux.di.AndroidScheduler
 import com.jakewharton.rxrelay2.PublishRelay
 import com.jakewharton.rxrelay2.Relay
-import io.reactivex.Scheduler
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.functions.Consumer
+import kotlinx.coroutines.experimental.CoroutineDispatcher
 import kotlinx.coroutines.experimental.CoroutineScope
-import kotlinx.coroutines.experimental.Dispatchers
 import kotlinx.coroutines.experimental.cancel
 import kotlinx.coroutines.experimental.launch
 import javax.inject.Inject
@@ -20,9 +19,9 @@ import kotlin.coroutines.experimental.CoroutineContext
 
 class PopularRepositoriesViewModel @Inject constructor(
     paginationStateMachine: PaginationStateMachine,
-    @AndroidScheduler androidScheduler : Scheduler
+    @AndroidScheduler private val androidScheduler : CoroutineDispatcher
 ) : ViewModel(), CoroutineScope {
-    override val coroutineContext: CoroutineContext get() = Dispatchers.Main
+    override val coroutineContext: CoroutineContext get() = androidScheduler
 
     private val inputRelay: Relay<Action> = PublishRelay.create()
     private val mutableState = MutableLiveData<PaginationStateMachine.State>()

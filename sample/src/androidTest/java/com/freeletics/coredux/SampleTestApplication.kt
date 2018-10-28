@@ -1,9 +1,9 @@
 package com.freeletics.coredux
 
 import android.view.ViewGroup
-import com.freeletics.di.TestApplicationModule
 import com.freeletics.coredux.di.DaggerApplicationComponent
-import io.reactivex.android.schedulers.AndroidSchedulers
+import com.freeletics.di.TestApplicationModule
+import kotlinx.coroutines.experimental.Dispatchers
 
 class SampleTestApplication : SampleApplication() {
 
@@ -11,7 +11,7 @@ class SampleTestApplication : SampleApplication() {
         builder.applicationModule(
             TestApplicationModule(
                 baseUrl = "http://127.0.0.1:$MOCK_WEB_SERVER_PORT",
-                androidScheduler = AndroidSchedulers.mainThread(),
+                androidScheduler = Dispatchers.Main,
                 viewBindingInstantiatorMap = mapOf<Class<*>, ViewBindingInstantiator>(
                     PopularRepositoriesActivity::class.java to { rootView: ViewGroup ->
                         RecordingPopularRepositoriesViewBinding(

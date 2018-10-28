@@ -2,7 +2,7 @@ package com.freeletics.di
 
 import com.freeletics.coredux.ViewBindingInstantiatorMap
 import com.freeletics.coredux.di.ApplicationModule
-import io.reactivex.Scheduler
+import kotlinx.coroutines.experimental.CoroutineDispatcher
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 class TestApplicationModule(
     baseUrl: String,
     viewBindingInstantiatorMap: ViewBindingInstantiatorMap,
-    androidScheduler: Scheduler
+    androidScheduler: CoroutineDispatcher
 ) : ApplicationModule(
     baseUrl = baseUrl,
     viewBindingInstantiatorMap = viewBindingInstantiatorMap,

@@ -6,7 +6,7 @@ import com.freeletics.coredux.businesslogic.github.GithubApi
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.experimental.CoroutineCallAdapterFactory
 import dagger.Module
 import dagger.Provides
-import io.reactivex.Scheduler
+import kotlinx.coroutines.experimental.CoroutineDispatcher
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -16,7 +16,7 @@ import javax.inject.Singleton
 open class ApplicationModule(
     private val baseUrl: String,
     private val viewBindingInstantiatorMap: ViewBindingInstantiatorMap,
-    private val androidScheduler: Scheduler
+    private val androidScheduler: CoroutineDispatcher
     ) {
 
     @Provides
