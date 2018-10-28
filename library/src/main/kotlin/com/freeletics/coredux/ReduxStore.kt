@@ -1,7 +1,6 @@
 package com.freeletics.coredux
 
 import kotlinx.coroutines.experimental.CoroutineScope
-import kotlinx.coroutines.experimental.Dispatchers
 import kotlinx.coroutines.experimental.GlobalScope
 import kotlinx.coroutines.experimental.channels.BroadcastChannel
 import kotlinx.coroutines.experimental.channels.Channel
@@ -44,12 +43,12 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     }
 
     // Sending initial state
-    coroutineScope.launch(context = Dispatchers.Unconfined) {
+    coroutineScope.launch {
         output.send(currentState)
     }
 
     // Starting reducer coroutine
-    coroutineScope.launch(context = Dispatchers.Unconfined) {
+    coroutineScope.launch {
         try {
             for (action in actionsChannel.openSubscription()) {
                 try {
@@ -57,7 +56,7 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
                 } catch (e: Throwable) {
                     output.close(ReducerException(currentState, action, e))
                 }
-                coroutineScope.launch(context = Dispatchers.Unconfined) {
+                coroutineScope.launch {
                     output.send(currentState)
                 }
             }
@@ -72,7 +71,7 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
 
     // Starting side-effects coroutines
     sideEffects.forEach { sideEffect ->
-        coroutineScope.launch(context = Dispatchers.Unconfined) {
+        coroutineScope.launch {
             try {
                 sideEffect(actionsChannel.openSubscription()) { return@sideEffect currentState }
                     .toChannel(actionsChannel)
@@ -83,7 +82,7 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     }
 
     // Start receiving items from upstream
-    coroutineScope.launch(context = Dispatchers.Unconfined) {
+    coroutineScope.launch {
         try {
             this@reduxStore.toChannel(actionsChannel)
         } catch (e: Exception) {
