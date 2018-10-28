@@ -277,6 +277,8 @@ class PaginationStateMachine @Inject constructor(
             } catch (error: Throwable) {
                 Timber.w("Got error $error")
                 output.send(ErrorLoadingPageAction(error, nextPage))
+            } finally {
+                output.close()
             }
         }
         return output
