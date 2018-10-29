@@ -496,5 +496,6 @@ class: center, middle
 - CoRedux - https://github.com/freeletics/CoRedux
 - presentation - https://github.com/freeletics/CoRedux/presentation
 - Advanced MVI: The missing guide - https://www.youtube.com/watch?v=mpfHG-aUgGU
+- Structured concurrency by Roman Elizarov - https://medium.com/@elizarov/structured-concurrency-722d765aa952
 
 ## .center[Thank you!]
