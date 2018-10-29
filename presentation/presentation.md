@@ -2,6 +2,8 @@ class: center, middle
 
 # Implementing Redux: from RxJava to Coroutines
 
+.footnote[By _Frank Hermann and Yahor Berdnikau_: Android developers **@Freeletics**]
+
 ---
 
 # Agenda
