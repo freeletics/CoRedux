@@ -1,16 +1,10 @@
 class: center, middle
 
-# Implementing Redux: from RxJava to Coroutines
+# Implementing Redux
+
+## from RxJava to Coroutines
 
 .footnote[By _Frank Hermann and Yahor Berdnikau_: Android developers **@Freeletics**]
-
----
-
-# Agenda
-
-1. Introduction to Redux
-2. RxRedux
-3. CoRedux
 
 ---
 
@@ -18,7 +12,11 @@ class: center, middle
 
 --
 
-- Client side state includes __server responses__, __cached data__ and __locally created data__
+- State management solution in web development
+
+--
+
+- Client side state includes **server responses**, **cached data** and **locally created data**
 
 --
 
@@ -30,7 +28,7 @@ class: center, middle
 
 --
 
-- __Mutation and asynchronicity__ is difficult for the human brain
+- **Mutation and asynchronicity** is difficult for the human brain
 
 --
 
@@ -38,15 +36,19 @@ class: center, middle
 
 ---
 
-# Introduction to Redux: Advantages
+# RxRedux
 
-Based on __CQRS(Command Query Responsibility Segregation)__ and __Event Sourcing__
+--
 
-- Single source of truth
+- Used at Freeletics for handling client side state
 
-- State is read-only
+--
 
-- Changes are made with pure functions
+- Redux implementation for Java and Kotlin
+
+--
+
+- Implements Redux with RxJava
 
 ---
 
@@ -116,7 +118,7 @@ val initialState = State(todos = emptyList())
 
 inputActions
     .reduxStore(initialState, emptyList(), ::reducer)
-    .subscribe(::render)
+    .subscribe(::render) // prints state
 
 inputActions.onNext(Action.AddTodo("Todo 1"))
 inputActions.onNext(Action.AddTodo("Todo 2"))
@@ -124,6 +126,22 @@ inputActions.onNext(Action.EditTodo(1, "This is Todo 2"))
 inputActions.onNext(Action.RemoveTodo(1))
 inputActions.onNext(Action.CompleteTodo(0))
 ```
+
+---
+
+## RxRedux Example: Store
+
+```Kotlin
+inputActions.onNext(Action.AddTodo("Todo 1"))
+inputActions.onNext(Action.AddTodo("Todo 2"))
+inputActions.onNext(Action.EditTodo(1, "This is Todo 2"))
+inputActions.onNext(Action.RemoveTodo(1))
+inputActions.onNext(Action.CompleteTodo(0))
+```
+
+--
+
+Output
 
 ```
 1: State(todos=[])
@@ -135,6 +153,26 @@ inputActions.onNext(Action.CompleteTodo(0))
 5: State(todos=[Todo(id=0, text=Todo 1, isCompleted=false)])
 6: State(todos=[Todo(id=0, text=Todo 1, isCompleted=true)])
 ```
+
+---
+
+# Introduction to Redux: Advantages
+
+--
+
+Based on **CQRS(Command Query Responsibility Segregation)** and **Event Sourcing**
+
+--
+
+- Single source of truth
+
+--
+
+- State is read-only
+
+--
+
+- Changes are made with pure functions
 
 ---
 
@@ -158,12 +196,14 @@ Channels will still be experimental.
 # Channels
 
 Creating a `Channel` is easy:
-``` kotlin
-val tasks = Channel<Task>()
 
+```kotlin
+val tasks = Channel<Task>()
 ```
+
 --
 `Channel` implements two interfaces:
+
 - `ReceiveChannel` - defines `public suspend fun receive(): E` method
 - `SendChannel` - defines `suspend fun send(element: E)` method
 
@@ -173,7 +213,7 @@ val tasks = Channel<Task>()
 
 Client 1 and Client 2:
 
-``` kotlin
+```kotlin
 val task = Task(..)
 tasks.send(task)
 ```
@@ -182,7 +222,7 @@ tasks.send(task)
 
 Worker 1:
 
-``` kotlin
+```kotlin
 while(true) {
   val task = tasks.receive()
   processTask(task)
@@ -202,7 +242,7 @@ sleeps until worker will be ready to process second task. -> Rendezvous Channel
 
 Buffered channel:
 
-``` kotlin
+```kotlin
 val channel = Channel<Task>(capacity = 1)
 ```
 
@@ -217,15 +257,14 @@ available.
 
 ConflatedChannel:
 
-``` kotlin
+```kotlin
 val channel = Channel<Task>(capacity = -1)
-
 ```
 
 ???
 
- Channel that buffers at most one element and conflates all subsequent `send` and `offer` invocations,
- so that the receiver always gets the most recently sent element.
+Channel that buffers at most one element and conflates all subsequent `send` and `offer` invocations,
+so that the receiver always gets the most recently sent element.
 
 ---
 
@@ -233,7 +272,7 @@ val channel = Channel<Task>(capacity = -1)
 
 BroadcastChannel:
 
-``` kotlin
+```kotlin
 val channel = BroadcastChannel<Task>(capacity = 10)
 
 GlobalScope.launch {
@@ -244,9 +283,9 @@ GlobalScope.launch {
 
 ???
 
- * Broadcast channel with array buffer of a fixed [capacity].
- * Sender suspends only when buffer is full due to one of the receives being slow to consume and
- * receiver suspends only when buffer is empty.
+- Broadcast channel with array buffer of a fixed [capacity].
+- Sender suspends only when buffer is full due to one of the receives being slow to consume and
+- receiver suspends only when buffer is empty.
 
 ---
 
@@ -254,7 +293,7 @@ GlobalScope.launch {
 
 `try {} catch () {} finally {}` is used to get error and completion events in channel:
 
-``` kotlin
+```kotlin
 try {
   for(event in channel) { .. }
 } catch (e: Exception) {
@@ -269,6 +308,7 @@ try {
 # Channels
 
 Useful bridges between channels and Rx streams in `kotlinx-coroutines-rx2`:
+
 - `openSubscription()` - Subscribes to observable and returns `ReceiveChannel`
 - `asObservable()` - converts streaming channel to **hot** observable
 
@@ -278,17 +318,18 @@ Useful bridges between channels and Rx streams in `kotlinx-coroutines-rx2`:
 
 RxJava `SideEffect`:
 
-``` kotlin
+```kotlin
 typealias SideEffect<S, A> = (
   actions: Observable<A>,
   state: StateAccessor<S>
 ) -> Observable<out A>
 ```
+
 --
 
 Coroutine `SideEffect`:
 
-``` kotlin
+```kotlin
 typealias SideEffect<S, A> = suspend (
   actions: ReceiveChannel<A>,
   state: StateAccessor<S>
@@ -299,7 +340,7 @@ typealias SideEffect<S, A> = suspend (
 
 # Side effects
 
-``` kotlin
+```kotlin
 sideEffects.forEach { sideEffect ->
   val actionsChannel = actionsSubject.openSubscription()
   launch {
@@ -316,7 +357,7 @@ sideEffects.forEach { sideEffect ->
 
 # First iteration on redux store
 
-``` kotlin
+```kotlin
 fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     initialState: S,
     sideEffects: List<SideEffect<S, A>>,
@@ -329,7 +370,7 @@ fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
 
 # First iteration on redux store
 
-``` kotlin
+```kotlin
 fun reduxStore(..) {
     val output = Channel<S>()
     val actionsChannel = BroadcastChannel<A>(1 + sideEffects.size)
@@ -351,7 +392,7 @@ fun reduxStore(..) {
 
 # First iteration on redux store
 
-``` kotlin
+```kotlin
 fun reduxStore(..) { ...
   coroutineScope.launch {
     try {
@@ -373,7 +414,7 @@ fun reduxStore(..) { ...
 
 # First iteration on redux store
 
-``` kotlin
+```kotlin
 fun reduxStore(..) { ...
   sideEffects.forEach { sideEffect ->
     coroutineScope.launch {
@@ -393,7 +434,7 @@ fun reduxStore(..) { ...
 
 # First iteration on redux store
 
-``` kotlin
+```kotlin
 fun reduxStore(..) {
   coroutineScope.launch {
     try {
@@ -429,7 +470,7 @@ It works... But still very Rx'ish...
 
 Provide redux store DSL:
 
-``` kotlin
+```kotlin
 val store = reduxStore(initialState = Init) {
   action<ActionType> { .. }
   action<ActionType> { .. }
@@ -455,6 +496,5 @@ class: center, middle
 - CoRedux - https://github.com/freeletics/CoRedux
 - presentation - https://github.com/freeletics/CoRedux/presentation
 - Advanced MVI: The missing guide - https://www.youtube.com/watch?v=mpfHG-aUgGU
-
 
 ## .center[Thank you!]
