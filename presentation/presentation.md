@@ -12,7 +12,7 @@ class: center, middle
 
 --
 
-- State management solution in web development
+- Managing changing state is difficult
 
 --
 
@@ -20,7 +20,7 @@ class: center, middle
 
 --
 
-- Managing changing state is difficult
+- State management solution in web development
 
 --
 
@@ -44,17 +44,17 @@ class: center, middle
 
 --
 
-- Redux implementation for Java and Kotlin
+- Implements Redux with RxJava
 
 --
 
-- Implements Redux with RxJava
+- Redux implementation for Java and Kotlin
 
 ---
 
 # RxRedux
 
-.center[<img src="https://raw.githubusercontent.com/freeletics/RxRedux/master/docs/rxredux.png" width="630" height="424"/>]
+.center[<img src="redux.jpg" width="700"/>]
 
 ---
 
@@ -76,7 +76,7 @@ data class State(
 
 ## RxRedux Example: Action
 
-```Kotlin
+```kotlin
 sealed class Action {
   data class AddTodo(val text: String) : Action()
   data class RemoveTodo(val id: Int) : Action()
@@ -89,7 +89,7 @@ sealed class Action {
 
 ## RxRedux Example: Reducer
 
-```Kotlin
+```kotlin
 fun reducer(state: State, action: Action): State =
   when (action) {
     is Action.AddTodo -> {
@@ -99,10 +99,10 @@ fun reducer(state: State, action: Action): State =
           text = action.text,
           isCompleted = false
       )
-      State(todos = state.todos + newTodo)
+      state.copy(todos = state.todos + newTodo)
     }
 
-    // all remaining actions...
+    // remaining actions...
   }
 }
 ```
@@ -111,13 +111,13 @@ fun reducer(state: State, action: Action): State =
 
 ## RxRedux Example: Store
 
-```Kotlin
+```kotlin
 val inputActions = PublishSubject.create<Action>()
-
+val sideEffects = listOf(::loadTodosFromBackend)
 val initialState = State(todos = emptyList())
 
 inputActions
-    .reduxStore(initialState, emptyList(), ::reducer)
+    .reduxStore(initialState, sideEffects, ::reducer)
     .subscribe(::render) // prints state
 
 inputActions.onNext(Action.AddTodo("Todo 1"))
@@ -131,7 +131,7 @@ inputActions.onNext(Action.CompleteTodo(0))
 
 ## RxRedux Example: Store
 
-```Kotlin
+```kotlin
 inputActions.onNext(Action.AddTodo("Todo 1"))
 inputActions.onNext(Action.AddTodo("Todo 2"))
 inputActions.onNext(Action.EditTodo(1, "This is Todo 2"))
@@ -157,10 +157,6 @@ Output
 ---
 
 # Introduction to Redux: Advantages
-
---
-
-Based on **CQRS(Command Query Responsibility Segregation)** and **Event Sourcing**
 
 --
 
