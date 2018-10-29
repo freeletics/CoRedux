@@ -41,14 +41,6 @@ class: center, middle
 
 ---
 
-# Agenda
-
-1. Introduction to Redux
-2. RxRedux
-3. CoRedux
-
----
-
 # Introduction to Redux: Motivation
 
 --
@@ -75,11 +67,19 @@ class: center, middle
 
 # Introduction to Redux: Advantages
 
+--
+
 Based on __CQRS(Command Query Responsibility Segregation)__ and __Event Sourcing__
+
+--
 
 - Single source of truth
 
+--
+
 - State is read-only
+
+--
 
 - Changes are made with pure functions
 
@@ -135,7 +135,7 @@ fun reducer(state: State, action: Action): State =
       State(todos = state.todos + newTodo)
     }
     
-    // all remaining actions...
+    // remaining actions...
   }
 }
 ```
@@ -160,6 +160,9 @@ inputActions.onNext(Action.RemoveTodo(1))
 inputActions.onNext(Action.CompleteTodo(0))
 ```
 
+--
+
+__Output__
 ```
 1: State(todos=[])
 2: State(todos=[Todo(id=0, text=Todo 1, isCompleted=false)])
