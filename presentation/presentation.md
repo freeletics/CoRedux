@@ -50,7 +50,7 @@ Based on __CQRS(Command Query Responsibility Segregation)__ and __Event Sourcing
 
 # RxRedux
 
-.image[![Redux](https://raw.githubusercontent.com/freeletics/RxRedux/master/docs/rxredux.png)]
+.center[<img src="https://raw.githubusercontent.com/freeletics/RxRedux/master/docs/rxredux.png" width="630" height="424"/>]
 
 ---
 
