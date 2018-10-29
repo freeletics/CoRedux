@@ -252,6 +252,22 @@ GlobalScope.launch {
 
 # Channels
 
+`try {} catch () {} finally {}` is used to get error and completion events in channel:
+
+``` kotlin
+try {
+  for(event in channel) { .. }
+} catch (e: Exception) {
+  // Do something with exception
+} finally {
+  // channel termination event
+}
+```
+
+---
+
+# Channels
+
 Useful bridges between channels and Rx streams in `kotlinx-coroutines-rx2`:
 - `openSubscription()` - Subscribes to observable and returns `ReceiveChannel`
 - `asObservable()` - converts streaming channel to **hot** observable
