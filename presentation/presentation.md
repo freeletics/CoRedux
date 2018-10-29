@@ -58,6 +58,30 @@ class: center, middle
 
 ---
 
+# RxRedux: Interfaces
+
+```kotlin
+typealias Reducer<STATE, ACTION> = (STATE, ACTION) -> STATE
+
+typealias SideEffect<STATE, ACTION> =
+(actions: Observable<ACTION>, state: StateAccessor<STATE>)
+-> Observable<out ACTION>
+
+fun <STATE: Any, ACTION: Any> Observable<ACTION>.reduxStore(
+    initialState: STATE,
+    sideEffects: List<SideEffect<STATE, ACTION>>,
+    reducer: Reducer<STATE, ACTION>
+): Observable<STATE>
+```
+
+---
+
+class: center, middle
+
+# RxRedux Example: Todo List
+
+---
+
 ## RxRedux Example: State
 
 ```kotlin
