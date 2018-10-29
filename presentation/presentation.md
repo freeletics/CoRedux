@@ -454,9 +454,9 @@ fun reduxStore(..) {
 
 It works... But still very Rx'ish...
 
----
+--
 
-# Possible future ways
+### Possible future ways:
 
 - Replace input and output channels with `dispatchAction()` and `observeState()` methods
 
@@ -466,7 +466,9 @@ It works... But still very Rx'ish...
 
 ---
 
-# Possible future ways
+# Current state
+
+### Possible future ways
 
 Provide redux store DSL:
 
