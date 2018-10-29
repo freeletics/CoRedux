@@ -8,7 +8,7 @@ class: center, middle
 
 ---
 
-# Introduction to Redux: Motivation
+# Introduction to Redux
 
 --
 
@@ -237,6 +237,7 @@ val tasks = Channel<Task>()
 val task = Task(..)
 tasks.send(task)
 ```
+
 ]]
 
 .right-column[.padded[Client 2:
@@ -245,6 +246,7 @@ tasks.send(task)
 val task = Task(..)
 tasks.send(task)
 ```
+
 ]]
 
 --
@@ -275,6 +277,7 @@ sleeps until worker will be ready to process second task. -> Rendezvous Channel
 val task = Task(..)
 *tasks.send(task)
 ```
+
 ]]
 
 .right-column[.padded[Client 2:
@@ -283,6 +286,7 @@ val task = Task(..)
 val task = Task(..)
 tasks.send(task)
 ```
+
 ]]
 
 Worker 1:
@@ -304,6 +308,7 @@ while(true) {
 val task = Task(..)
 *tasks.send(task)
 ```
+
 ]]
 
 .right-column[.padded[Client 2:
@@ -312,6 +317,7 @@ val task = Task(..)
 val task = Task(..)
 tasks.send(task)
 ```
+
 ]]
 
 Worker 1:
@@ -333,6 +339,7 @@ while(true) {
 val task = Task(..)
 tasks.send(task)
 ```
+
 ]]
 
 .right-column[.padded[Client 2:
@@ -341,6 +348,7 @@ tasks.send(task)
 val task = Task(..)
 tasks.send(task)
 ```
+
 ]]
 
 Worker 1:
@@ -362,6 +370,7 @@ while(true) {
 val task = Task(..)
 tasks.send(task)
 ```
+
 ]]
 
 .right-column[.padded[Client 2:
@@ -370,6 +379,7 @@ tasks.send(task)
 val task = Task(..)
 *tasks.send(task)
 ```
+
 ]]
 
 Worker 1:
@@ -382,7 +392,6 @@ while(true) {
 ```
 
 ---
-
 
 # Channels
 
