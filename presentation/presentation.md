@@ -231,12 +231,21 @@ val tasks = Channel<Task>()
 
 # Channels
 
-Client 1 and Client 2:
+.left-column[.padded[Client 1:
 
 ```kotlin
 val task = Task(..)
 tasks.send(task)
 ```
+]]
+
+.right-column[.padded[Client 2:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
 
 --
 
@@ -257,6 +266,123 @@ While worker processing task1 - client2 comes and sends second task -
 sleeps until worker will be ready to process second task. -> Rendezvous Channel
 
 ---
+
+# Channels
+
+.left-column[.padded[Client 1:
+
+```kotlin
+val task = Task(..)
+*tasks.send(task)
+```
+]]
+
+.right-column[.padded[Client 2:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
+
+Worker 1:
+
+```kotlin
+while(true) {
+  val task = tasks.receive()
+  processTask(task)
+}
+```
+
+---
+
+# Channels
+
+.left-column[.padded[Client 1:
+
+```kotlin
+val task = Task(..)
+*tasks.send(task)
+```
+]]
+
+.right-column[.padded[Client 2:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
+
+Worker 1:
+
+```kotlin
+while(true) {
+* val task = tasks.receive()
+  processTask(task)
+}
+```
+
+---
+
+# Channels
+
+.left-column[.padded[Client 1:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
+
+.right-column[.padded[Client 2:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
+
+Worker 1:
+
+```kotlin
+while(true) {
+  val task = tasks.receive()
+* processTask(task)
+}
+```
+
+---
+
+# Channels
+
+.left-column[.padded[Client 1:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
+
+.right-column[.padded[Client 2:
+
+```kotlin
+val task = Task(..)
+*tasks.send(task)
+```
+]]
+
+Worker 1:
+
+```kotlin
+while(true) {
+  val task = tasks.receive()
+* processTask(task)
+}
+```
+
+---
+
 
 # Channels
 
@@ -474,9 +600,9 @@ fun reduxStore(..) {
 
 It works... But still very Rx'ish...
 
----
+--
 
-# Possible future ways
+### Possible future ways:
 
 - Replace input and output channels with `dispatchAction()` and `observeState()` methods
 
@@ -486,7 +612,9 @@ It works... But still very Rx'ish...
 
 ---
 
-# Possible future ways
+# Current state
+
+### Possible future ways
 
 Provide redux store DSL:
 
@@ -516,5 +644,6 @@ class: center, middle
 - CoRedux - https://github.com/freeletics/CoRedux
 - presentation - https://github.com/freeletics/CoRedux/presentation
 - Advanced MVI: The missing guide - https://www.youtube.com/watch?v=mpfHG-aUgGU
+- Structured concurrency by Roman Elizarov - https://medium.com/@elizarov/structured-concurrency-722d765aa952
 
 ## .center[Thank you!]
