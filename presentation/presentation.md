@@ -211,12 +211,21 @@ val tasks = Channel<Task>()
 
 # Channels
 
-Client 1 and Client 2:
+.left-column[.padded[Client 1:
 
 ```kotlin
 val task = Task(..)
 tasks.send(task)
 ```
+]]
+
+.right-column[.padded[Client 2:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
 
 --
 
@@ -237,6 +246,123 @@ While worker processing task1 - client2 comes and sends second task -
 sleeps until worker will be ready to process second task. -> Rendezvous Channel
 
 ---
+
+# Channels
+
+.left-column[.padded[Client 1:
+
+```kotlin
+val task = Task(..)
+*tasks.send(task)
+```
+]]
+
+.right-column[.padded[Client 2:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
+
+Worker 1:
+
+```kotlin
+while(true) {
+  val task = tasks.receive()
+  processTask(task)
+}
+```
+
+---
+
+# Channels
+
+.left-column[.padded[Client 1:
+
+```kotlin
+val task = Task(..)
+*tasks.send(task)
+```
+]]
+
+.right-column[.padded[Client 2:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
+
+Worker 1:
+
+```kotlin
+while(true) {
+* val task = tasks.receive()
+  processTask(task)
+}
+```
+
+---
+
+# Channels
+
+.left-column[.padded[Client 1:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
+
+.right-column[.padded[Client 2:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
+
+Worker 1:
+
+```kotlin
+while(true) {
+  val task = tasks.receive()
+* processTask(task)
+}
+```
+
+---
+
+# Channels
+
+.left-column[.padded[Client 1:
+
+```kotlin
+val task = Task(..)
+tasks.send(task)
+```
+]]
+
+.right-column[.padded[Client 2:
+
+```kotlin
+val task = Task(..)
+*tasks.send(task)
+```
+]]
+
+Worker 1:
+
+```kotlin
+while(true) {
+  val task = tasks.receive()
+* processTask(task)
+}
+```
+
+---
+
 
 # Channels
 
