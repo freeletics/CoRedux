@@ -430,3 +430,15 @@ store.dispatch(LoadAction)
 class: center, middle
 
 # Questions?
+
+---
+
+# Links
+
+- RxRedux - https://github.com/freeletics/RxRedux
+- CoRedux - https://github.com/freeletics/CoRedux
+- presentation - https://github.com/freeletics/CoRedux/presentation
+- Advanced MVI: The missing guide - https://www.youtube.com/watch?v=mpfHG-aUgGU
+
+
+## .center[Thank you!]
