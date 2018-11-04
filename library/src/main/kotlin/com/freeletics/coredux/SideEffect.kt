@@ -1,6 +1,6 @@
 package com.freeletics.coredux
 
-import kotlinx.coroutines.experimental.channels.ReceiveChannel
+import kotlinx.coroutines.channels.ReceiveChannel
 
 /**
  * It is a function which takes a stream of actions and returns a stream of actions. Actions in, actions out

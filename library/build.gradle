@@ -30,5 +30,8 @@ dokka {
     outputDirectory = "$buildDir/javadoc"
 }
 
-kotlin {
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile.class).all {
+    kotlinOptions {
+        freeCompilerArgs = ["-Xuse-experimental=kotlin.Experimental"]
+    }
 }

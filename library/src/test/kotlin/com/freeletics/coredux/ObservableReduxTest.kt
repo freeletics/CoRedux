@@ -3,16 +3,16 @@ package com.freeletics.coredux
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
 import io.reactivex.subjects.PublishSubject
-import kotlinx.coroutines.experimental.CoroutineScope
-import kotlinx.coroutines.experimental.Dispatchers
-import kotlinx.coroutines.experimental.channels.filter
-import kotlinx.coroutines.experimental.channels.map
-import kotlinx.coroutines.experimental.rx2.asCoroutineDispatcher
-import kotlinx.coroutines.experimental.rx2.asObservable
-import kotlinx.coroutines.experimental.rx2.openSubscription
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.filter
+import kotlinx.coroutines.channels.map
+import kotlinx.coroutines.rx2.asCoroutineDispatcher
+import kotlinx.coroutines.rx2.asObservable
+import kotlinx.coroutines.rx2.openSubscription
 import org.junit.Assert
 import org.junit.Test
-import kotlin.coroutines.experimental.CoroutineContext
+import kotlin.coroutines.CoroutineContext
 
 class ObservableReduxTest : CoroutineScope {
     override val coroutineContext: CoroutineContext = Dispatchers.Unconfined

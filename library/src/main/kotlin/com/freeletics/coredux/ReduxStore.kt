@@ -1,12 +1,14 @@
 package com.freeletics.coredux
 
-import kotlinx.coroutines.experimental.CoroutineScope
-import kotlinx.coroutines.experimental.GlobalScope
-import kotlinx.coroutines.experimental.channels.BroadcastChannel
-import kotlinx.coroutines.experimental.channels.Channel
-import kotlinx.coroutines.experimental.channels.ReceiveChannel
-import kotlinx.coroutines.experimental.channels.toChannel
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.channels.BroadcastChannel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.toChannel
+import kotlinx.coroutines.launch
 
 /**
  * A ReduxStore is a RxJava based implementation of Redux and redux-observable.js.org.
@@ -27,6 +29,7 @@ import kotlinx.coroutines.experimental.launch
  * @param S The type of the State
  * @param A The type of the Actions
  */
+@UseExperimental(ExperimentalCoroutinesApi::class, ObsoleteCoroutinesApi::class)
 fun <S: Any, A: Any> ReceiveChannel<A>.reduxStore(
     initialState: S,
     sideEffects: List<SideEffect<S, A>>,
