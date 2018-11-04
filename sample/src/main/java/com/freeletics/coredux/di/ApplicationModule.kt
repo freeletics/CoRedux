@@ -3,10 +3,10 @@ package com.freeletics.coredux.di
 import com.freeletics.coredux.ViewBindingFactory
 import com.freeletics.coredux.ViewBindingInstantiatorMap
 import com.freeletics.coredux.businesslogic.github.GithubApi
-import com.jakewharton.retrofit2.adapter.kotlin.coroutines.experimental.CoroutineCallAdapterFactory
+import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import dagger.Module
 import dagger.Provides
-import kotlinx.coroutines.experimental.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineDispatcher
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory

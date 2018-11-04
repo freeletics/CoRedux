@@ -7,7 +7,7 @@ import com.freeletics.di.TestApplicationModule
 import io.reactivex.Observable
 import io.reactivex.subjects.ReplaySubject
 import io.reactivex.subjects.Subject
-import kotlinx.coroutines.experimental.Dispatchers
+import kotlinx.coroutines.Dispatchers
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.Rule
 import org.junit.Test

@@ -52,9 +52,9 @@ android {
     }
 }
 
-kotlin {
-    experimental {
-        coroutines "enable"
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile.class).all {
+    kotlinOptions {
+        freeCompilerArgs = ["-Xuse-experimental=kotlin.Experimental"]
     }
 }
 

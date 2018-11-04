@@ -3,7 +3,7 @@ package com.freeletics.coredux
 import android.view.ViewGroup
 import com.freeletics.coredux.di.DaggerApplicationComponent
 import com.freeletics.di.TestApplicationModule
-import kotlinx.coroutines.experimental.Dispatchers
+import kotlinx.coroutines.Dispatchers
 
 class SampleTestApplication : SampleApplication() {
 

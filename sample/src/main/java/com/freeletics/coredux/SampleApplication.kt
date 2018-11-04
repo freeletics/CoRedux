@@ -4,7 +4,7 @@ import android.app.Application
 import android.view.ViewGroup
 import com.freeletics.coredux.di.ApplicationModule
 import com.freeletics.coredux.di.DaggerApplicationComponent
-import kotlinx.coroutines.experimental.Dispatchers
+import kotlinx.coroutines.Dispatchers
 import timber.log.Timber
 
 open class SampleApplication : Application() {

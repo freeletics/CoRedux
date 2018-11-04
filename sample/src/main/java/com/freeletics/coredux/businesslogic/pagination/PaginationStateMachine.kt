@@ -5,17 +5,19 @@ import com.freeletics.coredux.businesslogic.github.GithubApiFacade
 import com.freeletics.coredux.businesslogic.github.GithubRepository
 import com.freeletics.coredux.businesslogic.pagination.PaginationStateMachine.State
 import com.freeletics.coredux.reduxStore
-import kotlinx.coroutines.experimental.Dispatchers
-import kotlinx.coroutines.experimental.GlobalScope
-import kotlinx.coroutines.experimental.async
-import kotlinx.coroutines.experimental.channels.Channel
-import kotlinx.coroutines.experimental.channels.ReceiveChannel
-import kotlinx.coroutines.experimental.channels.distinct
-import kotlinx.coroutines.experimental.channels.filter
-import kotlinx.coroutines.experimental.channels.flatMap
-import kotlinx.coroutines.experimental.channels.map
-import kotlinx.coroutines.experimental.delay
-import kotlinx.coroutines.experimental.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.distinct
+import kotlinx.coroutines.channels.filter
+import kotlinx.coroutines.channels.flatMap
+import kotlinx.coroutines.channels.map
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -183,6 +185,7 @@ class PaginationStateMachine @Inject constructor(
     /**
      * Load the first Page
      */
+    @UseExperimental(ObsoleteCoroutinesApi::class)
     private val loadFirstPageSideEffect: SideEffect<State, Action> = { actions, state ->
         actions
             .filter {
@@ -195,6 +198,7 @@ class PaginationStateMachine @Inject constructor(
     /**
      * A Side Effect that loads the next page
      */
+    @UseExperimental(ObsoleteCoroutinesApi::class)
     private val loadNextPageSideEffect: SideEffect<State, Action> = { actions, state ->
         actions
             .filter { it is Action.LoadNextPageAction }
@@ -207,6 +211,7 @@ class PaginationStateMachine @Inject constructor(
      * Shows and hides an error after a given time.
      * In UI a snackbar showing an error message would be shown / hidden respectively
      */
+    @UseExperimental(ObsoleteCoroutinesApi::class)
     private val showAndHideLoadingErrorSideEffect: SideEffect<State, Action> = { actions, _ ->
         actions
             .filter {
@@ -227,6 +232,7 @@ class PaginationStateMachine @Inject constructor(
 
     val input = Channel<Action>()
 
+    @UseExperimental(ObsoleteCoroutinesApi::class)
     val state: ReceiveChannel<State> = input
         .map {
             Timber.d("Input Action: $it")
@@ -250,6 +256,7 @@ class PaginationStateMachine @Inject constructor(
     /**
      * Loads the next Page
      */
+    @UseExperimental(ExperimentalCoroutinesApi::class)
     private fun nextPage(s: State): ReceiveChannel<Action> {
         val output = Channel<Action>()
         val nextPage = (if (s is ContainsItems) s.page else 0) + 1
