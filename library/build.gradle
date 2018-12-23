@@ -13,9 +13,19 @@ if (gradle.ext.isCiServer) {
     }
 }
 
+test {
+    useJUnitPlatform {
+        includeEngines "spek2"
+    }
+}
+
 dependencies {
     api libraries.kotlinStdlib
     api libraries.coroutinesCore
+
+    testImplementation testLibraries.spek2Dsl
+    testRuntimeOnly testLibraries.spek2Junit5Runner
+    testRuntimeOnly testLibraries.junit5Engine
 
     testImplementation libraries.rxJava
     testImplementation libraries.coroutinesRx2
