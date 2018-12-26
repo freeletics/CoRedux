@@ -23,9 +23,9 @@ import kotlinx.coroutines.launch
 @UseExperimental(ExperimentalCoroutinesApi::class, ObsoleteCoroutinesApi::class)
 fun <S: Any, A: Any> CoroutineScope.reduxStore(
     initialState: S,
-    stateReceiver: StateReceiver<S>,
-    sideEffects: List<SideEffect<S, A>>,
-    reducer: Reducer<S, A>
+    sideEffects: List<SideEffect<S, A>> = emptyList(),
+    reducer: Reducer<S, A>,
+    stateReceiver: StateReceiver<S>
 ): ActionDispatcher<A> {
     val actionsChannel = BroadcastChannel<A>(1 + sideEffects.size)
     var currentState = initialState
@@ -78,21 +78,3 @@ fun <S: Any, A: Any> CoroutineScope.reduxStore(
 
     return actionDispatcher
 }
-
-/**
- * Just a convenience method to use varags for arbitarry many sideeffects instead a list of SideEffects.
- * See [reduxStore] documentation.
- *
- * @see reduxStore
- */
-fun <S: Any, A: Any> CoroutineScope.reduxStore(
-    initialState: S,
-    stateReceiver: StateReceiver<S>,
-    vararg sideEffects: SideEffect<S, A>,
-    reducer: Reducer<S, A>
-): ActionDispatcher<A> = reduxStore(
-    initialState = initialState,
-    stateReceiver = stateReceiver,
-    sideEffects = sideEffects.toList(),
-    reducer = reducer
-)
