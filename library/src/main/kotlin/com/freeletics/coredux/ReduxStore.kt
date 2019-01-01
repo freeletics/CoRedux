@@ -2,7 +2,9 @@ package com.freeletics.coredux
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.toChannel
 import kotlinx.coroutines.isActive
@@ -23,22 +25,25 @@ import kotlinx.coroutines.launch
 @UseExperimental(ExperimentalCoroutinesApi::class, ObsoleteCoroutinesApi::class)
 fun <S: Any, A: Any> CoroutineScope.reduxStore(
     initialState: S,
+    stateReceiver: StateReceiver<S>,
     sideEffects: List<SideEffect<S, A>> = emptyList(),
-    reducer: Reducer<S, A>,
-    stateReceiver: StateReceiver<S>
+    reducer: Reducer<S, A>
 ): ActionDispatcher<A> {
     val actionsChannel = BroadcastChannel<A>(1 + sideEffects.size)
     var currentState = initialState
     val actionDispatcher: ActionDispatcher<A> = object : ActionDispatcher<A> {
         override fun dispatch(action: A) {
-            if (isActive) launch { actionsChannel.send(action) }
+            if (isActive) {
+                launch { actionsChannel.send(action) }
+            } else {
+                throw IllegalStateException("CoroutineScope is cancelled")
+            }
         }
     }
 
-//     output.invokeOnClose {
-//        this@reduxStore.cancel()
-//        actionsChannel.close()
-//    }
+    coroutineContext[Job]?.invokeOnCompletion {
+        actionsChannel.close(it)
+    }
 
     // Sending initial state
     stateReceiver(currentState)
@@ -55,13 +60,11 @@ fun <S: Any, A: Any> CoroutineScope.reduxStore(
                 stateReceiver(currentState)
             }
         } catch (e: Exception) {
-            if (!isActive) {
-                throw e
-            }
+            if (isActive) throw e
+        } finally {
+            if (!actionsChannel.isClosedForSend) actionsChannel.close()
+            if (isActive) cancel()
         }
-//        } finally {
-//            if (!output.isClosedForSend) output.close()
-//        }
     }
 
     // Starting side-effects coroutines
