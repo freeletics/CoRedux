@@ -20,15 +20,16 @@ object SimpleStoreTest : Spek({
             scope.reduxStore<State, Actions>(
                 initialState = State.Initial,
                 stateReceiver = stateReceiver
-            ) { _, newAction ->
+            ) { currentState, newAction ->
                 when (newAction) {
                     Actions.LoadItems -> State.LoadingItems
+                    else -> currentState
                 }
             }
         }
 
         it("should emit initial state") {
-            store.dispatch(Actions.LoadItems)
+            store.toString()
             assertEquals(State.Initial, stateReceiver.receivedStates(1).first())
         }
 

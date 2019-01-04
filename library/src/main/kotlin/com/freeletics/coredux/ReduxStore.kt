@@ -3,10 +3,10 @@ package com.freeletics.coredux
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BroadcastChannel
-import kotlinx.coroutines.channels.toChannel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -22,19 +22,20 @@ import kotlinx.coroutines.launch
  *
  * @return [ActionDispatcher] that should be use to dispatch new actions to [reduxStore]
  */
-@UseExperimental(ExperimentalCoroutinesApi::class, ObsoleteCoroutinesApi::class)
+@UseExperimental(ExperimentalCoroutinesApi::class)
 fun <S: Any, A: Any> CoroutineScope.reduxStore(
     initialState: S,
     stateReceiver: StateReceiver<S>,
     sideEffects: List<SideEffect<S, A>> = emptyList(),
     reducer: Reducer<S, A>
 ): ActionDispatcher<A> {
-    val actionsChannel = BroadcastChannel<A>(1 + sideEffects.size)
-    var currentState = initialState
+    val actionsReducerChannel = Channel<A>()
+    val actionsSideEffectsChannel = BroadcastChannel<A>(CONFLATED)
+
     val actionDispatcher: ActionDispatcher<A> = object : ActionDispatcher<A> {
         override fun dispatch(action: A) {
             if (isActive) {
-                launch { actionsChannel.send(action) }
+                launch { actionsReducerChannel.send(action) }
             } else {
                 throw IllegalStateException("CoroutineScope is cancelled")
             }
@@ -42,40 +43,40 @@ fun <S: Any, A: Any> CoroutineScope.reduxStore(
     }
 
     coroutineContext[Job]?.invokeOnCompletion {
-        actionsChannel.close(it)
+        actionsReducerChannel.close(it)
+        actionsSideEffectsChannel.close(it)
     }
-
-    // Sending initial state
-    stateReceiver(currentState)
 
     // Starting reducer coroutine
     launch {
+        var currentState = initialState
+
+        // Sending initial state
+        stateReceiver(currentState)
+
+        // Starting side-effects coroutines
+        sideEffects.forEach { sideEffect ->
+            with (sideEffect) {
+                start(
+                    actionsSideEffectsChannel.openSubscription(),
+                    { currentState },
+                    actionsReducerChannel
+                )
+            }
+        }
+
         try {
-            for (action in actionsChannel.openSubscription()) {
+            for (action in actionsReducerChannel) {
                 try {
                     currentState = reducer(currentState, action)
                 } catch (e: Throwable) {
                     throw ReducerException(currentState, action, e)
                 }
                 stateReceiver(currentState)
+                actionsSideEffectsChannel.send(action)
             }
-        } catch (e: Exception) {
-            if (isActive) throw e
         } finally {
-            if (!actionsChannel.isClosedForSend) actionsChannel.close()
             if (isActive) cancel()
-        }
-    }
-
-    // Starting side-effects coroutines
-    sideEffects.forEach { sideEffect ->
-        launch {
-            try {
-                sideEffect(actionsChannel.openSubscription()) { return@sideEffect currentState }
-                    .toChannel(actionsChannel)
-            } catch (e: Exception) {
-                if (!actionsChannel.isClosedForSend) actionsChannel.close(e)
-            }
         }
     }
 
