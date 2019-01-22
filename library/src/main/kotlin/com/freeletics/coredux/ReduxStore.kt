@@ -113,3 +113,10 @@ class ReducerException(
     action: Any,
     cause: Throwable
 ) : RuntimeException("Exception was thrown by reducer, state = '$state', action = '$action'", cause)
+
+/**
+ * Type alias for a updated state receiver function.
+ *
+ * State update will always be received on [reduxStore] [CoroutineScope] thread.
+ */
+typealias StateReceiver<S> = (S) -> Unit
