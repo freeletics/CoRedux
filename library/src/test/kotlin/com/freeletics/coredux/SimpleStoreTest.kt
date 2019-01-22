@@ -35,7 +35,7 @@ object SimpleStoreTest : Spek({
 
         context("On new action ${Actions.LoadItems::class.simpleName}") {
             beforeEach {
-                store.dispatch(Actions.LoadItems)
+                store(Actions.LoadItems)
             }
 
             it("should emit ${State.LoadingItems::class.simpleName}") {
@@ -45,13 +45,13 @@ object SimpleStoreTest : Spek({
 
         context("when scope is cancelled") {
             beforeEach {
-                store.dispatch(Actions.LoadItems)
+                store(Actions.LoadItems)
                 scope.cancel()
             }
             it("should not accept new actions") {
                 assertFalse(scope.isActive)
                 try {
-                    store.dispatch(Actions.LoadItems)
+                    store(Actions.LoadItems)
                     fail("No exception was thrown")
                 } catch (e: IllegalStateException) {}
             }

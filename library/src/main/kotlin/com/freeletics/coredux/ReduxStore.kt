@@ -32,13 +32,11 @@ fun <S: Any, A: Any> CoroutineScope.reduxStore(
     val actionsReducerChannel = Channel<A>()
     val actionsSideEffectsChannel = BroadcastChannel<A>(CONFLATED)
 
-    val actionDispatcher: ActionDispatcher<A> = object : ActionDispatcher<A> {
-        override fun dispatch(action: A) {
-            if (isActive) {
-                launch { actionsReducerChannel.send(action) }
-            } else {
-                throw IllegalStateException("CoroutineScope is cancelled")
-            }
+    val actionDispatcher: ActionDispatcher<A> = { action ->
+        if (isActive) {
+            launch { actionsReducerChannel.send(action) }
+        } else {
+            throw IllegalStateException("CoroutineScope is cancelled")
         }
     }
 
@@ -82,3 +80,11 @@ fun <S: Any, A: Any> CoroutineScope.reduxStore(
 
     return actionDispatcher
 }
+
+/**
+ * Dispatches new actions to given [reduxStore] instance.
+ *
+ * It is safe to call this method from different threads,
+ * action will consumed on [reduxStore] [CoroutineScope] context.
+ */
+typealias ActionDispatcher<A> = (A) -> Unit

@@ -34,7 +34,7 @@ internal object StoreWithSideEffectsTest : Spek({
         }
 
         context("onn ${Actions.LoadItems::class.simpleName} action") {
-            beforeEach { store.dispatch(Actions.LoadItems) }
+            beforeEach { store(Actions.LoadItems) }
 
             it("reducer should react first with ${State.LoadingItems::class.simpleName} state") {
                 stateReceiver.assertStates(
@@ -52,7 +52,7 @@ internal object StoreWithSideEffectsTest : Spek({
             }
 
             context("and immediately on second load item action") {
-                beforeEach { store.dispatch(Actions.LoadItems) }
+                beforeEach { store(Actions.LoadItems) }
 
                 it("should emit only 4 states") {
                     try {
@@ -97,7 +97,7 @@ internal object StoreWithSideEffectsTest : Spek({
         }
 
         context("On ${Actions.LoadItems::class.simpleName} action") {
-            beforeEach { store.dispatch(Actions.LoadItems) }
+            beforeEach { store(Actions.LoadItems) }
 
             val expectedStates = listOf(
                 State.Initial,
@@ -124,7 +124,7 @@ internal object StoreWithSideEffectsTest : Spek({
                 beforeEach {
                     scope.launch {
                         delay(updateDelay + 1)
-                        store.dispatch(Actions.LoadItems)
+                        store(Actions.LoadItems)
                     }
                 }
 
