@@ -3,6 +3,7 @@ package com.freeletics.coredux
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
@@ -31,19 +32,13 @@ internal typealias TestSE = SideEffect<State, Actions>
 internal fun loadItemsSE(
     loadedItems: List<String>,
     loadDelay: Long = 100L
-) = object : SimpleSideEffect<State, Actions>() {
-
-    override fun shouldHandleNewAction(
-        inputAction: Actions,
-        currentState: State
-    ): Boolean = inputAction is Actions.LoadItems
-
-    override suspend fun handleAction(
-        inputAction: Actions,
-        currentState: State
-    ): Actions? {
-        delay(loadDelay)
-        return Actions.ItemsLoaded(loadedItems)
+) = SimpleSideEffect<State, Actions> { action, _, handler ->
+    when (action) {
+        Actions.LoadItems -> handler {
+            delay(loadDelay)
+            Actions.ItemsLoaded(loadedItems)
+        }
+        else -> null
     }
 }
 
@@ -57,6 +52,7 @@ internal val emptySE: TestSE = object : TestSE {
     }
 }
 
+@UseExperimental(ObsoleteCoroutinesApi::class)
 internal fun updateItemsSE(
     produceDelay: Long = 100L
 ) : TestSE = object : TestSE {

@@ -41,16 +41,22 @@ interface SideEffect<S, A> {
 }
 
 /**
- * Simplified implementation of [SideEffect] that produces on one input action either one output action or no action.
- *
- * On each new combinations of input action and current state that produces `true` in [shouldHandleNewAction] method,
- * previous invocation of [handleAction] will be cancelled
- * and [handleAction] will be called again with new inputs.
+ * Simplified version of [SideEffect] that produces on one input action either one output action or no action.
  *
  * @param S states type
  * @param A actions type
+ * @param sideEffect function should check for given `action`/`state` combination and return either [Job]
+ * from `handler {}` coroutine function call or `null`, if side effect does not interested
+ * in `action` - `state` combination. If `handler {}` coroutine will be called again on new input,
+ * while previous invocation still running - old one coroutine will be cancelled.
  */
-abstract class SimpleSideEffect<S, A> : SideEffect<S, A> {
+class SimpleSideEffect<S, A>(
+    private val sideEffect: (
+        action: A, 
+        state: StateAccessor<S>, 
+        handler: (suspend () -> A?) -> Job
+    ) -> Job?
+) : SideEffect<S, A> {
     override fun CoroutineScope.start(
         input: ReceiveChannel<A>,
         stateAccessor: StateAccessor<S>,
@@ -58,34 +64,10 @@ abstract class SimpleSideEffect<S, A> : SideEffect<S, A> {
     ) = launch {
         var job: Job? = null
         for (action in input) {
-            val state = stateAccessor()
-            if (shouldHandleNewAction(action, state)) {
+            sideEffect(action, stateAccessor) { handler ->
                 job?.cancel()
-                job = launch {
-                    handleAction(action, state)?.let { output.send(it) }
-                }
-            }
+                launch { handler()?.let { output.send(it) } }
+            }?.let { job = it }
         }
     }
-
-    /**
-     * Only given combinations of [inputAction] and [currentState] that produces `true` will be passed
-     * to [handleAction] method call.
-     */
-    abstract fun shouldHandleNewAction(
-        inputAction: A,
-        currentState: S
-    ): Boolean
-
-    /**
-     * Handles [inputAction] from [reduxStore] and may produce new output action.
-     *
-     * @param inputAction new input action that was passed to [shouldHandleNewAction]
-     * @param currentState current state that was passed to [shouldHandleNewAction]
-     * @return either new action or `null` if this side effect doesn't want to produce new action
-     */
-    abstract suspend fun handleAction(
-        inputAction: A,
-        currentState: S
-    ): A?
 }

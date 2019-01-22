@@ -18,21 +18,18 @@ internal typealias SE = SimpleSideEffect<State, Actions>
 internal object SimpleSideEffectTest : Spek({
     describe("A ${SimpleSideEffect::class.simpleName}") {
         val scope by memoized { CoroutineScope(Dispatchers.Default) }
-        val sideEffect by memoized { object : SE() {
-            override fun shouldHandleNewAction(
-                inputAction: Actions,
-                currentState: State
-            ): Boolean = inputAction == Actions.LoadItems &&
-                currentState == State.Initial
-
-            override suspend fun handleAction(
-                inputAction: Actions,
-                currentState: State
-            ): Actions? {
-                delay(10)
-                return Actions.ItemsLoaded(listOf("item"))
+        val sideEffect by memoized {
+            SE { action, state, handler ->
+                val currentState = state()
+                when {
+                    action == Actions.LoadItems && currentState == State.Initial -> handler {
+                        delay(10)
+                        Actions.ItemsLoaded(listOf("item"))
+                    }
+                    else -> null
+                }
             }
-        }}
+        }
         val inputChannel by memoized { Channel<Actions>() }
         val outputChannel by memoized { Channel<Actions>(100) }
         val stateAccessor by memoized { TestStateAccessor(State.Initial) }
@@ -51,7 +48,7 @@ internal object SimpleSideEffectTest : Spek({
             context("and on new ${Actions.LoadItems::class.simpleName}") {
                 beforeEach { scope.launch { inputChannel.send(Actions.LoadItems) } }
 
-                it("should not call ${SE::handleAction.name}") {
+                it("should not call handler") {
                     runBlocking {
                         try {
                             withTimeout(100) {
@@ -68,7 +65,7 @@ internal object SimpleSideEffectTest : Spek({
             context("and on new ${Actions.ItemsLoaded::class.simpleName}") {
                 beforeEach { scope.launch { inputChannel.send(Actions.ItemsLoaded(listOf("some"))) } }
 
-                it("should not call ${SE::handleAction.name}") {
+                it("should not call handler") {
                     runBlocking {
                         try {
                             withTimeout(100) {
@@ -104,7 +101,7 @@ internal object SimpleSideEffectTest : Spek({
                         }
                     }
 
-                    it("should cancel previous call to ${SE::handleAction.name} method") {
+                    it("should cancel previous call to handler method") {
                         runBlocking {
                             withTimeout(100) {
                                 delay(30)
