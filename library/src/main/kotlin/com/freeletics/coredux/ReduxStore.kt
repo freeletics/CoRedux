@@ -65,12 +65,17 @@ fun <S: Any, A: Any> CoroutineScope.reduxStore(
 
         try {
             for (action in actionsReducerChannel) {
-                try {
-                    currentState = reducer(currentState, action)
+                val newState = try {
+                    reducer(currentState, action)
                 } catch (e: Throwable) {
                     throw ReducerException(currentState, action, e)
                 }
-                stateReceiver(currentState)
+
+                if (newState != null) {
+                    currentState = newState
+                    stateReceiver(currentState)
+                }
+
                 actionsSideEffectsChannel.send(action)
             }
         } finally {
@@ -88,3 +93,23 @@ fun <S: Any, A: Any> CoroutineScope.reduxStore(
  * action will consumed on [reduxStore] [CoroutineScope] context.
  */
 typealias ActionDispatcher<A> = (A) -> Unit
+
+/**
+ * A simple type alias for a reducer function.
+ * A Reducer takes a State and an Action as input and produces a state as output.
+ *
+ * If a reducer should not react on a Action, just return `null`.
+ *
+ * @param S The type of the state
+ * @param A The type of the Actions
+ */
+typealias Reducer<S, A> = (S, A) -> S?
+
+/**
+ * Wraps [Reducer] call exception.
+ */
+class ReducerException(
+    state: Any,
+    action: Any,
+    cause: Throwable
+) : RuntimeException("Exception was thrown by reducer, state = '$state', action = '$action'", cause)
