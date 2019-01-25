@@ -53,8 +53,8 @@ interface SideEffect<S, A> {
  */
 class SimpleSideEffect<S, A>(
     private val sideEffect: (
-        action: A, 
-        state: StateAccessor<S>, 
+        state: StateAccessor<S>,
+        action: A,
         handler: (suspend () -> A?) -> Job
     ) -> Job?
 ) : SideEffect<S, A> {
@@ -65,7 +65,7 @@ class SimpleSideEffect<S, A>(
     ) = launch {
         var job: Job? = null
         for (action in input) {
-            sideEffect(action, stateAccessor) { handler ->
+            sideEffect(stateAccessor, action) { handler ->
                 job?.cancel()
                 launch { handler()?.let { output.send(it) } }
             }?.let { job = it }

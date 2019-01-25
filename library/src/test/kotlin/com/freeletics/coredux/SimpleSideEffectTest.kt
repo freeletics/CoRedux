@@ -19,7 +19,7 @@ internal object SimpleSideEffectTest : Spek({
     describe("A ${SimpleSideEffect::class.simpleName}") {
         val scope by memoized { CoroutineScope(Dispatchers.Default) }
         val sideEffect by memoized {
-            SE { action, state, handler ->
+            SE { state, action, handler ->
                 val currentState = state()
                 when {
                     action == Actions.LoadItems && currentState == State.Initial -> handler {
