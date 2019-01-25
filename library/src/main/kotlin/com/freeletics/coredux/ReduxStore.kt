@@ -6,7 +6,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -30,7 +29,7 @@ fun <S: Any, A: Any> CoroutineScope.reduxStore(
     reducer: Reducer<S, A>
 ): ActionDispatcher<A> {
     val actionsReducerChannel = Channel<A>(Channel.UNLIMITED)
-    val actionsSideEffectsChannel = BroadcastChannel<A>(CONFLATED)
+    val actionsSideEffectsChannel = BroadcastChannel<A>(sideEffects.size)
 
     val actionDispatcher: ActionDispatcher<A> = { action ->
         if (actionsReducerChannel.isClosedForSend) throw IllegalStateException("CoroutineScope is cancelled")

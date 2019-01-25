@@ -22,15 +22,16 @@ interface SideEffect<S, A> {
     /**
      * Starts side effect [Job] in given [CoroutineScope].
      *
-     * It is up to implementation of side effect to filter actions
-     * and handle only subset of them.
+     * **Not consuming** new actions from [input] will lead to [reduxStore] error state!
      *
-     * Also implementation should care about cancelling any previous triggered
-     * operations on new input action.
+     * It is up to implementation of side effect to filter actions
+     * and handle only subset of them. If handling the action takes time, better to launch new coroutine for it
+     * to not block [reduxStore] new actions processing - consuming should be fast! Also implementation should care
+     * about cancelling any previous triggered operations on new input action.
      *
      * @param input a [ReceiveChannel] of actions that comes from [reduxStore]
      * @param stateAccessor provides a way to get current state of [reduxStore]
-     * @param output a [SendChannel] of actions that this side effect should use to produce new actions. nIf side effect
+     * @param output a [SendChannel] of actions that this side effect should use to produce new actions. If side effect
      * doesn't want to handle new action from [input] channel - it could ignore sending action to this [output] channel
      */
     fun CoroutineScope.start(
