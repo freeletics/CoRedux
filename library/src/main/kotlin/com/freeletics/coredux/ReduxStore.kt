@@ -29,14 +29,14 @@ fun <S: Any, A: Any> CoroutineScope.reduxStore(
     sideEffects: List<SideEffect<S, A>> = emptyList(),
     reducer: Reducer<S, A>
 ): ActionDispatcher<A> {
-    val actionsReducerChannel = Channel<A>()
+    val actionsReducerChannel = Channel<A>(Channel.UNLIMITED)
     val actionsSideEffectsChannel = BroadcastChannel<A>(CONFLATED)
 
     val actionDispatcher: ActionDispatcher<A> = { action ->
-        if (isActive) {
-            launch { actionsReducerChannel.send(action) }
-        } else {
-            throw IllegalStateException("CoroutineScope is cancelled")
+        if (actionsReducerChannel.isClosedForSend) throw IllegalStateException("CoroutineScope is cancelled")
+
+        if (!actionsReducerChannel.offer(action)) {
+            throw IllegalStateException("Input actions overflow - buffer is full")
         }
     }
 

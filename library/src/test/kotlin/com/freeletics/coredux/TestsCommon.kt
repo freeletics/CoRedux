@@ -90,7 +90,7 @@ internal class TestStateReceiver<S> : StateReceiver<S> {
         return runBlocking { withTimeout(1000) { statesCollector.await() }}
     }
 
-    fun assertStates(vararg expectedStates: State) {
+    fun assertStates(vararg expectedStates: S) {
         val collectedStates = receivedStates(expectedStates.size)
         assertEquals(expectedStates.toList(), collectedStates)
     }
