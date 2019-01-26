@@ -1,5 +1,6 @@
 package com.freeletics.coredux
 
+import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
@@ -8,12 +9,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 
-internal typealias SE = SimpleSideEffect<State, Actions>
+internal typealias SE = SimpleSideEffect<String, Int>
 
 internal object SimpleSideEffectTest : Spek({
     describe("A ${SimpleSideEffect::class.simpleName}") {
@@ -22,17 +22,17 @@ internal object SimpleSideEffectTest : Spek({
             SE { state, action, handler ->
                 val currentState = state()
                 when {
-                    action == Actions.LoadItems && currentState == State.Initial -> handler {
+                    action == 1 && currentState == "" -> handler {
                         delay(10)
-                        Actions.ItemsLoaded(listOf("item"))
+                        100
                     }
                     else -> null
                 }
             }
         }
-        val inputChannel by memoized { Channel<Actions>() }
-        val outputChannel by memoized { Channel<Actions>(100) }
-        val stateAccessor by memoized { TestStateAccessor(State.Initial) }
+        val inputChannel by memoized { Channel<Int>() }
+        val outputChannel by memoized { Channel<Int>(100) }
+        val stateAccessor by memoized { TestStateAccessor("") }
 
         beforeEach {
             scope.launch {
@@ -42,11 +42,11 @@ internal object SimpleSideEffectTest : Spek({
             }
         }
 
-        context("when current state is not ${State.Initial::class.simpleName}") {
-            beforeEach { stateAccessor.setCurrentState(State.LoadingItems) }
+        context("when current state is not \"\"") {
+            beforeEach { stateAccessor.setCurrentState("some-other-state") }
 
-            context("and on new ${Actions.LoadItems::class.simpleName}") {
-                beforeEach { scope.launch { inputChannel.send(Actions.LoadItems) } }
+            context("and on new 1 action") {
+                beforeEach { scope.launch { inputChannel.send(1) } }
 
                 it("should not call handler") {
                     runBlocking {
@@ -61,9 +61,9 @@ internal object SimpleSideEffectTest : Spek({
             }
         }
 
-        context("when current state is ${State.Initial::class.simpleName}") {
-            context("and on new ${Actions.ItemsLoaded::class.simpleName}") {
-                beforeEach { scope.launch { inputChannel.send(Actions.ItemsLoaded(listOf("some"))) } }
+        context("when current state is \"\"") {
+            context("and on new 2 action") {
+                beforeEach { scope.launch { inputChannel.send(2) } }
 
                 it("should not call handler") {
                     runBlocking {
@@ -77,26 +77,26 @@ internal object SimpleSideEffectTest : Spek({
                 }
             }
 
-            context("and on new ${Actions.LoadItems::class.simpleName}") {
-                beforeEach { scope.launch { inputChannel.send(Actions.LoadItems) } }
+            context("and on new 1 action") {
+                beforeEach { scope.launch { inputChannel.send(1) } }
 
-                it("should send ${Actions.ItemsLoaded::class.simpleName} to output channel") {
+                it("should send 100 action to output channel") {
                     runBlocking {
                         withTimeout(100) {
                             val item = outputChannel.receive()
-                            assertEquals(Actions.ItemsLoaded(listOf("item")), item)
+                            assertEquals(100, item)
                         }
                     }
                 }
 
-                context("and on second immediate ${Actions.LoadItems::class.simpleName}") {
-                    beforeEach { scope.launch { inputChannel.send(Actions.LoadItems) } }
+                context("and on second immediate 1 action") {
+                    beforeEach { scope.launch { inputChannel.send(1) } }
 
-                    it("should send ${Actions.ItemsLoaded::class.simpleName} to output channel") {
+                    it("should send 100 action to output channel") {
                         runBlocking {
                             withTimeout(100) {
                                 val item = outputChannel.receive()
-                                assertEquals(Actions.ItemsLoaded(listOf("item")), item)
+                                assertEquals(100, item)
                             }
                         }
                     }
@@ -105,7 +105,7 @@ internal object SimpleSideEffectTest : Spek({
                         runBlocking {
                             withTimeout(100) {
                                 delay(30)
-                                val items = mutableListOf<Actions>()
+                                val items = mutableListOf<Int>()
                                 (0..2).forEach { _ ->
                                     outputChannel.poll()?.let { items.add(it) }
                                 }

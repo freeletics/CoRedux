@@ -5,54 +5,51 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 
 internal object StoreWithSideEffectsTest : Spek({
-    describe("A redux store with only load items side effect") {
-        val expectedItems = listOf("one", "two")
-        val stateReceiver by memoized { TestStateReceiver<State>() }
+    describe("A redux store with only ${::stateLengthSE.name} side effect") {
+        val stateReceiver by memoized { TestStateReceiver<String>() }
         val scope by memoized { CoroutineScope(Dispatchers.Default) }
         val store by memoized {
             scope.reduxStore(
-                initialState = State.Initial,
+                initialState = "",
                 stateReceiver = stateReceiver,
-                sideEffects = listOf(loadItemsSE(expectedItems))
+                sideEffects = listOf(stateLengthSE(lengthLimit = 2))
             ) { currentState, newAction ->
-                when (newAction) {
-                    Actions.LoadItems -> State.LoadingItems
-                    is Actions.ItemsLoaded -> State.ShowItems(newAction.item)
-                    else -> currentState
-                }
+                currentState + newAction
             }
         }
 
         it("should emit initial state") {
             store.toString()
-            stateReceiver.assertStates(State.Initial)
+            stateReceiver.assertStates("")
         }
 
-        context("onn ${Actions.LoadItems::class.simpleName} action") {
-            beforeEach { store(Actions.LoadItems) }
+        context("on 1 action") {
+            beforeEach { store(1) }
 
-            it("reducer should react first with ${State.LoadingItems::class.simpleName} state") {
+            it("reducer should react first with \"1\" state") {
                 stateReceiver.assertStates(
-                    State.Initial,
-                    State.LoadingItems
+                    "",
+                    "1"
                 )
             }
 
-            it("should emit show items state as a last state") {
+            it("should emit \"11\" as a third state") {
                 stateReceiver.assertStates(
-                    State.Initial,
-                    State.LoadingItems,
-                    State.ShowItems(expectedItems)
+                    "",
+                    "1",
+                    "11"
                 )
             }
 
-            context("and immediately on second load item action") {
-                beforeEach { store(Actions.LoadItems) }
+            context("and immediately on 5 action") {
+                beforeEach { store(5) }
 
                 it("should emit only 4 states") {
                     try {
@@ -63,51 +60,49 @@ internal object StoreWithSideEffectsTest : Spek({
 
                 it("should emit states in order") {
                     stateReceiver.assertStates(
-                        State.Initial,
-                        State.LoadingItems,
-                        State.LoadingItems,
-                        State.ShowItems(expectedItems)
+                        "",
+                        "1",
+                        "15",
+                        "152"
                     )
                 }
             }
         }
     }
 
-    describe("A redux store with different side effects") {
-        val expectedItems = listOf("one", "two")
+    describe("A redux store with many side effects") {
         val updateDelay = 100L
-        val stateReceiver by memoized { TestStateReceiver<State>() }
+        val stateReceiver by memoized { TestStateReceiver<String>() }
         val scope by memoized { CoroutineScope(Dispatchers.Default) }
+        val loggerSE by memoized { LoggerSE() }
         val store by memoized {
             scope.reduxStore(
-                initialState = State.Initial,
+                initialState = "",
                 stateReceiver = stateReceiver,
                 sideEffects = listOf(
-                    loadItemsSE(expectedItems, 0L),
-                    emptySE,
-                    updateItemsSE(updateDelay)
+                    stateLengthSE(
+                        lengthLimit = 4,
+                        loadDelay = 0L
+                    ),
+                    loggerSE,
+                    multiplyActionSE(updateDelay)
                 )
             ) { currentState, newAction ->
-                when (newAction) {
-                    Actions.LoadItems -> State.LoadingItems
-                    is Actions.ItemsLoaded -> State.ShowItems(newAction.item)
-                    is Actions.UpdateItem -> State.UpdateItem(newAction.updatedItem)
-                }
+                currentState + newAction
             }
         }
 
-        context("On ${Actions.LoadItems::class.simpleName} action") {
-            beforeEach { store(Actions.LoadItems) }
+        context("On 1 action") {
+            beforeEach { store(1) }
 
             val expectedStates = listOf(
-                State.Initial,
-                State.LoadingItems,
-                State.ShowItems(expectedItems)
-            ).run {
-                this + expectedItems.map { item ->
-                    State.UpdateItem(item + "_updated")
-                }
-            }
+                "",
+                "1",
+                "11",
+                "112",
+                "1123",
+                "11234"
+            )
 
             it("Should emit states $expectedStates in order") {
                 stateReceiver.assertStates(*expectedStates.toTypedArray())
@@ -120,26 +115,34 @@ internal object StoreWithSideEffectsTest : Spek({
                 } catch (e: TimeoutCancellationException) {}
             }
 
-            context("And after ${updateDelay + 1} delay on second ${Actions.LoadItems::class.simpleName} action") {
+            it("${LoggerSE::class.simpleName} should receive all action in order") {
+                runBlocking {
+                    delay(1000)
+                    assertEquals(
+                        listOf(1, 1, 2, 3, 4),
+                        loggerSE.receivedActions
+                    )
+                }
+            }
+
+            context("And after ${updateDelay + 1} delay on second 100 action") {
                 beforeEach {
                     scope.launch {
                         delay(updateDelay + 1)
-                        store(Actions.LoadItems)
+                        store(100)
                     }
                 }
 
                 val expectedStates = listOf(
-                    State.Initial,
-                    State.LoadingItems,
-                    State.ShowItems(expectedItems),
-                    State.UpdateItem(expectedItems[0] + "_updated"),
-                    State.LoadingItems,
-                    State.ShowItems(expectedItems)
-                ).run {
-                    this + expectedItems.map { item ->
-                        State.UpdateItem(item + "_updated")
-                    }
-                }
+                    "",
+                    "1",
+                    "11",
+                    "112",
+                    "1123",
+                    "11234",
+                    "11234100",
+                    "112341002000"
+                )
 
                 it("Should emit $expectedStates states in order") {
                     stateReceiver.assertStates(*expectedStates.toTypedArray())

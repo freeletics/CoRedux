@@ -14,61 +14,52 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 
-internal sealed class State {
-    object Initial : State()
-    object LoadingItems : State()
-    data class ShowItems(val items: List<String>) : State()
-    data class UpdateItem(val item: String) : State()
-}
-
-internal sealed class Actions {
-    object LoadItems : Actions()
-    data class ItemsLoaded(val item: List<String>) : Actions()
-    data class UpdateItem(val updatedItem: String) : Actions()
-}
-
-internal typealias TestSE = SideEffect<State, Actions>
-
-internal fun loadItemsSE(
-    loadedItems: List<String>,
+internal fun stateLengthSE(
+    lengthLimit: Int = 10,
     loadDelay: Long = 100L
-) = SimpleSideEffect<State, Actions> { action, _, handler ->
-    when (action) {
-        Actions.LoadItems -> handler {
+) = SimpleSideEffect<String, Int> { state, _, handler ->
+    val currentStateLength = state().length
+    if (currentStateLength <= lengthLimit) {
+        handler {
             delay(loadDelay)
-            Actions.ItemsLoaded(loadedItems)
+            currentStateLength
         }
-        else -> null
+    } else {
+        null
     }
 }
 
-internal val emptySE: TestSE = object : TestSE {
+class LoggerSE: SideEffect<String, Int> {
+    private val recordedActions = mutableListOf<Int>()
+
+    val receivedActions get() = recordedActions.toList()
+
     override fun CoroutineScope.start(
-        input: ReceiveChannel<Actions>,
-        stateAccessor: StateAccessor<State>,
-        output: SendChannel<Actions>
+        input: ReceiveChannel<Int>,
+        stateAccessor: StateAccessor<String>,
+        output: SendChannel<Int>
     ) = launch {
-        // do nothing
+        for (action in input) {
+            recordedActions.add(action)
+        }
     }
 }
 
 @UseExperimental(ObsoleteCoroutinesApi::class)
-internal fun updateItemsSE(
+internal fun multiplyActionSE(
     produceDelay: Long = 100L
-) : TestSE = object : TestSE {
+) : SideEffect<String, Int> = object : SideEffect<String, Int> {
     override fun CoroutineScope.start(
-        input: ReceiveChannel<Actions>,
-        stateAccessor: StateAccessor<State>,
-        output: SendChannel<Actions>
+        input: ReceiveChannel<Int>,
+        stateAccessor: StateAccessor<String>,
+        output: SendChannel<Int>
     ): Job = launch {
         var job: Job? = null
-        for (action in input.filter { it is Actions.ItemsLoaded }) {
+        for (action in input.filter { it in 100..1000 }) {
             job?.cancel()
             job = launch {
-                (action as Actions.ItemsLoaded).item.forEach {
-                    delay(produceDelay)
-                    output.send(Actions.UpdateItem(it + "_updated"))
-                }
+                delay(produceDelay)
+                output.send(action * 20)
             }
         }
     }
@@ -103,10 +94,10 @@ internal class TestStateReceiver<S> : StateReceiver<S> {
     private val timeDiff get() = System.currentTimeMillis() - zeroTime
 }
 
-internal class TestStateAccessor(
-    private var currentState: State
-) : StateAccessor<State> {
-    fun setCurrentState(state: State) { currentState = state }
+internal class TestStateAccessor<S>(
+    private var currentState: S
+) : StateAccessor<S> {
+    fun setCurrentState(state: S) { currentState = state }
 
-    override fun invoke(): State = currentState
+    override fun invoke(): S = currentState
 }
