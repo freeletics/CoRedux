@@ -24,12 +24,11 @@ dependencies {
     api libraries.coroutinesCore
 
     testImplementation testLibraries.spek2Dsl
+    testImplementation testLibraries.junit
+    testImplementation libraries.kotlinReflect
     testRuntimeOnly testLibraries.spek2Junit5Runner
     testRuntimeOnly testLibraries.junit5Engine
 
-    testImplementation libraries.rxJava
-    testImplementation libraries.coroutinesRx2
-    testImplementation testLibraries.junit
 }
 
 sourceCompatibility = "1.7"

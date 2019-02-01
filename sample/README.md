@@ -25,7 +25,7 @@ of showing and hiding a `SnackBar` that is used to display an error on screen.
 As a user of this app scrolls to the end of the list, the next page of popular Github repositories is loaded.
 The real deal with `RxRedux` is `SideEffect` (Action in, Actions out) as we will try to highlight in the following example (source code is available on [Github](https://github.com/freeletics/RxRedux/tree/master/sample)).
 
-To set up our Redux Store with RxRedux we use `.reduxStore()`:
+To set up our Redux Store with RxRedux we use `.createStore()`:
 
 ```kotlin
 // Actions triggered by the user in the UI / View Layer
