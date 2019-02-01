@@ -18,20 +18,20 @@ internal object StoreWithSideEffectsTest : Spek({
         val store by memoized {
             scope.reduxStore(
                 initialState = "",
-                stateReceiver = stateReceiver,
                 sideEffects = listOf(stateLengthSE(lengthLimit = 2))
             ) { currentState, newAction ->
                 currentState + newAction
             }
         }
 
+        beforeEach { store.subscribe(stateReceiver) }
+
         it("should emit initial state") {
-            store.toString()
             stateReceiver.assertStates("")
         }
 
         context("on 1 action") {
-            beforeEach { store(1) }
+            beforeEach { store.dispatch(1) }
 
             it("reducer should react first with \"1\" state") {
                 stateReceiver.assertStates(
@@ -49,7 +49,7 @@ internal object StoreWithSideEffectsTest : Spek({
             }
 
             context("and immediately on 5 action") {
-                beforeEach { store(5) }
+                beforeEach { store.dispatch(5) }
 
                 it("should emit only 4 states") {
                     try {
@@ -78,7 +78,6 @@ internal object StoreWithSideEffectsTest : Spek({
         val store by memoized {
             scope.reduxStore(
                 initialState = "",
-                stateReceiver = stateReceiver,
                 sideEffects = listOf(
                     stateLengthSE(
                         lengthLimit = 4,
@@ -92,8 +91,10 @@ internal object StoreWithSideEffectsTest : Spek({
             }
         }
 
+        beforeEach { store.subscribe(stateReceiver) }
+
         context("On 1 action") {
-            beforeEach { store(1) }
+            beforeEach { store.dispatch(1) }
 
             val expectedStates = listOf(
                 "",
@@ -129,7 +130,7 @@ internal object StoreWithSideEffectsTest : Spek({
                 beforeEach {
                     scope.launch {
                         delay(updateDelay + 1)
-                        store(100)
+                        store.dispatch(100)
                     }
                 }
 

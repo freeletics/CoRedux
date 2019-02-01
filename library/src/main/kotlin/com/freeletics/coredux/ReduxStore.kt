@@ -1,11 +1,13 @@
 package com.freeletics.coredux
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -13,85 +15,133 @@ import kotlinx.coroutines.launch
  * A [reduxStore] is a Kotlin coroutine based implementation of Redux and redux.js.org.
  *
  * @param initialState The initial state. This one will be emitted directly in onSubscribe()
- * @param stateReceiver function that receives new state updates
  * @param sideEffects The sideEffects. See [SideEffect].
+ * @param launchMode store launch mode. Default is [CoroutineStart.LAZY] - when first [StateReceiver]
+ * will added to [Store], it will start processing input actions.
  * @param reducer The reducer.  See [Reducer].
  * @param S The type of the State
  * @param A The type of the Actions
  *
- * @return [ActionDispatcher] that should be use to dispatch new actions to [reduxStore]
+ * @return instance of [Store] object
  */
 @UseExperimental(ExperimentalCoroutinesApi::class)
 fun <S: Any, A: Any> CoroutineScope.reduxStore(
     initialState: S,
-    stateReceiver: StateReceiver<S>,
     sideEffects: List<SideEffect<S, A>> = emptyList(),
+    launchMode: CoroutineStart = CoroutineStart.LAZY,
     reducer: Reducer<S, A>
-): ActionDispatcher<A> {
+): Store<S, A> {
     val actionsReducerChannel = Channel<A>(Channel.UNLIMITED)
-    val actionsSideEffectsChannel = BroadcastChannel<A>(sideEffects.size)
-
-    val actionDispatcher: ActionDispatcher<A> = { action ->
-        if (actionsReducerChannel.isClosedForSend) throw IllegalStateException("CoroutineScope is cancelled")
-
-        if (!actionsReducerChannel.offer(action)) {
-            throw IllegalStateException("Input actions overflow - buffer is full")
-        }
-    }
+    val actionsSideEffectsChannel = BroadcastChannel<A>(sideEffects.size + 1)
 
     coroutineContext[Job]?.invokeOnCompletion {
         actionsReducerChannel.close(it)
         actionsSideEffectsChannel.close(it)
     }
 
-    // Starting reducer coroutine
-    launch {
-        var currentState = initialState
+    return CoreduxStore(actionsReducerChannel) { stateDispatcher ->
+        // Creating reducer coroutine
+        launch(start = launchMode) {
+            var currentState = initialState
 
-        // Sending initial state
-        stateReceiver(currentState)
+            // Sending initial state
+            stateDispatcher(currentState)
 
-        // Starting side-effects coroutines
-        sideEffects.forEach { sideEffect ->
-            with (sideEffect) {
-                start(
-                    actionsSideEffectsChannel.openSubscription(),
-                    { currentState },
-                    actionsReducerChannel
-                )
-            }
-        }
-
-        try {
-            for (action in actionsReducerChannel) {
-                val newState = try {
-                    reducer(currentState, action)
-                } catch (e: Throwable) {
-                    throw ReducerException(currentState, action, e)
+            // Starting side-effects coroutines
+            sideEffects.forEach { sideEffect ->
+                with (sideEffect) {
+                    start(
+                        actionsSideEffectsChannel.openSubscription(),
+                        { currentState },
+                        actionsReducerChannel
+                    )
                 }
-
-                if (newState != null) {
-                    currentState = newState
-                    stateReceiver(currentState)
-                }
-
-                actionsSideEffectsChannel.send(action)
             }
-        } finally {
-            if (isActive) cancel()
+
+            try {
+                for (action in actionsReducerChannel) {
+                    val newState = try {
+                        reducer(currentState, action)
+                    } catch (e: Throwable) {
+                        throw ReducerException(currentState, action, e)
+                    }
+
+                    if (newState != null) {
+                        currentState = newState
+                        stateDispatcher(currentState)
+                    }
+
+                    actionsSideEffectsChannel.send(action)
+                }
+            } finally {
+                if (isActive) cancel()
+            }
         }
     }
-
-    return actionDispatcher
 }
 
 /**
- * Dispatches new actions to given [reduxStore] instance.
- *
- * It is safe to call this method from different threads,
- * action will consumed on [reduxStore] [CoroutineScope] context.
+ * Provides methods to interact with [reduxStore] instance.
  */
-typealias ActionDispatcher<A> = (A) -> Unit
+interface Store<S : Any, A : Any> {
+    /**
+     * Dispatches new actions to given [reduxStore] instance.
+     *
+     * It is safe to call this method from different threads,
+     * action will consumed on [reduxStore] [CoroutineScope] context.
+     *
+     * If `launchMode` for [reduxStore] is [CoroutineStart.LAZY] dispatched actions will be collected and passed
+     * to reducer on first [subscribe] call.
+     */
+    fun dispatch(action: A)
+
+    /**
+     * Add new [StateReceiver] to the store.
+     *
+     * It is ok to call this method multiple times - each call will add a new [StateReceiver].
+     */
+    fun subscribe(subscriber: StateReceiver<S>)
+
+    /**
+     * Remove previously added via [subscriber] [StateReceiver].
+     */
+    fun unsubscribe(subscriber: StateReceiver<S>)
+}
+
+private class CoreduxStore<S: Any, A: Any>(
+    private val actionsDispatchChannel: SendChannel<A>,
+    reducerCoroutineBuilder: ((S) -> Unit) -> Job
+) : Store<S, A> {
+    private val reducerCoroutine = reducerCoroutineBuilder { newState ->
+        stateReceiversList.forEach {
+            it(newState)
+        }
+    }
+    private var stateReceiversList = emptyList<StateReceiver<S>>()
+
+    @UseExperimental(ExperimentalCoroutinesApi::class)
+    override fun dispatch(action: A) {
+        if (actionsDispatchChannel.isClosedForSend) throw IllegalStateException("CoroutineScope is cancelled")
+
+        if (!actionsDispatchChannel.offer(action)) {
+            throw IllegalStateException("Input actions overflow - buffer is full")
+        }
+    }
+
+
+    override fun subscribe(subscriber: StateReceiver<S>) {
+        val receiversIsEmpty = stateReceiversList.isEmpty()
+        stateReceiversList = stateReceiversList + subscriber
+        if (receiversIsEmpty &&
+            !reducerCoroutine.isActive) {
+            reducerCoroutine.start()
+        }
+    }
+
+    override fun unsubscribe(subscriber: StateReceiver<S>) {
+        stateReceiversList = stateReceiversList - subscriber
+    }
+}
 
 /**
  * A simple type alias for a reducer function.
