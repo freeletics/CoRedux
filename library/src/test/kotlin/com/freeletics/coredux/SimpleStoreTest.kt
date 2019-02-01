@@ -20,7 +20,7 @@ object SimpleStoreTest : Spek({
         val stateReceiver by memoized { TestStateReceiver<String>() }
         val scope by memoized { CoroutineScope(Dispatchers.Default) }
         val store by memoized {
-            scope.reduxStore<String, Int>(
+            scope.createStore<String, Int>(
                 initialState = ""
             ) { _, newAction ->
                 when {

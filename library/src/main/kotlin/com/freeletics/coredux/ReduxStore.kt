@@ -12,7 +12,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * A [reduxStore] is a Kotlin coroutine based implementation of Redux and redux.js.org.
+ * A [createStore] is a Kotlin coroutine based implementation of Redux and redux.js.org.
  *
  * @param initialState The initial state. This one will be emitted directly in onSubscribe()
  * @param sideEffects The sideEffects. See [SideEffect].
@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
  * @return instance of [Store] object
  */
 @UseExperimental(ExperimentalCoroutinesApi::class)
-fun <S: Any, A: Any> CoroutineScope.reduxStore(
+fun <S: Any, A: Any> CoroutineScope.createStore(
     initialState: S,
     sideEffects: List<SideEffect<S, A>> = emptyList(),
     launchMode: CoroutineStart = CoroutineStart.LAZY,
@@ -81,16 +81,16 @@ fun <S: Any, A: Any> CoroutineScope.reduxStore(
 }
 
 /**
- * Provides methods to interact with [reduxStore] instance.
+ * Provides methods to interact with [createStore] instance.
  */
 interface Store<S : Any, A : Any> {
     /**
-     * Dispatches new actions to given [reduxStore] instance.
+     * Dispatches new actions to given [createStore] instance.
      *
      * It is safe to call this method from different threads,
-     * action will consumed on [reduxStore] [CoroutineScope] context.
+     * action will consumed on [createStore] [CoroutineScope] context.
      *
-     * If `launchMode` for [reduxStore] is [CoroutineStart.LAZY] dispatched actions will be collected and passed
+     * If `launchMode` for [createStore] is [CoroutineStart.LAZY] dispatched actions will be collected and passed
      * to reducer on first [subscribe] call.
      */
     fun dispatch(action: A)
@@ -166,6 +166,6 @@ class ReducerException(
 /**
  * Type alias for a updated state receiver function.
  *
- * State update will always be received on [reduxStore] [CoroutineScope] thread.
+ * State update will always be received on [createStore] [CoroutineScope] thread.
  */
 typealias StateReceiver<S> = (S) -> Unit

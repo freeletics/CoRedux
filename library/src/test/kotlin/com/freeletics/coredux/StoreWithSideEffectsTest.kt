@@ -16,7 +16,7 @@ internal object StoreWithSideEffectsTest : Spek({
         val stateReceiver by memoized { TestStateReceiver<String>() }
         val scope by memoized { CoroutineScope(Dispatchers.Default) }
         val store by memoized {
-            scope.reduxStore(
+            scope.createStore(
                 initialState = "",
                 sideEffects = listOf(stateLengthSE(lengthLimit = 2))
             ) { currentState, newAction ->
@@ -76,7 +76,7 @@ internal object StoreWithSideEffectsTest : Spek({
         val scope by memoized { CoroutineScope(Dispatchers.Default) }
         val loggerSE by memoized { LoggerSE() }
         val store by memoized {
-            scope.reduxStore(
+            scope.createStore(
                 initialState = "",
                 sideEffects = listOf(
                     stateLengthSE(

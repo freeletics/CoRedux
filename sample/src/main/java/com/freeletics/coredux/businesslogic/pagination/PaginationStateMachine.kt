@@ -4,7 +4,6 @@ import com.freeletics.coredux.SideEffect
 import com.freeletics.coredux.businesslogic.github.GithubApiFacade
 import com.freeletics.coredux.businesslogic.github.GithubRepository
 import com.freeletics.coredux.businesslogic.pagination.PaginationStateMachine.State
-import com.freeletics.coredux.reduxStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
@@ -12,9 +11,6 @@ import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.distinct
-import kotlinx.coroutines.channels.filter
-import kotlinx.coroutines.channels.flatMap
 import kotlinx.coroutines.channels.map
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
