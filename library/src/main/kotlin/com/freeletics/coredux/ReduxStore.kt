@@ -149,7 +149,7 @@ private class CoreduxStore<S: Any, A: Any>(
  * @param S The type of the state
  * @param A The type of the Actions
  */
-typealias Reducer<S, A> = (S, A) -> S
+typealias Reducer<S, A> = (currentState: S, newAction: A) -> S
 
 /**
  * Wraps [Reducer] call exception.
