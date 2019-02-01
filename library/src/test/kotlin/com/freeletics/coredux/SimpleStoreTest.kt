@@ -22,10 +22,10 @@ object SimpleStoreTest : Spek({
         val store by memoized {
             scope.createStore<String, Int>(
                 initialState = ""
-            ) { _, newAction ->
+            ) { currentState, newAction ->
                 when {
                     newAction >= 0 -> newAction.toString()
-                    else -> null
+                    else -> currentState
                 }
             }
         }

@@ -60,16 +60,13 @@ fun <S: Any, A: Any> CoroutineScope.createStore(
 
             try {
                 for (action in actionsReducerChannel) {
-                    val newState = try {
+                    currentState = try {
                         reducer(currentState, action)
                     } catch (e: Throwable) {
                         throw ReducerException(currentState, action, e)
                     }
 
-                    if (newState != null) {
-                        currentState = newState
-                        stateDispatcher(currentState)
-                    }
+                    stateDispatcher(currentState)
 
                     actionsSideEffectsChannel.send(action)
                 }
@@ -147,12 +144,12 @@ private class CoreduxStore<S: Any, A: Any>(
  * A simple type alias for a reducer function.
  * A Reducer takes a State and an Action as input and produces a state as output.
  *
- * If a reducer should not react on a Action, just return `null`.
+ * **Note**: Implementations of [Reducer] must be fast and _lock-free_.
  *
  * @param S The type of the state
  * @param A The type of the Actions
  */
-typealias Reducer<S, A> = (S, A) -> S?
+typealias Reducer<S, A> = (S, A) -> S
 
 /**
  * Wraps [Reducer] call exception.
