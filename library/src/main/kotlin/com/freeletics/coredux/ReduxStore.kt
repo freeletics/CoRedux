@@ -165,7 +165,7 @@ class ReducerException(
  *
  * State update will always be received on [createStore] [CoroutineScope] thread.
  */
-typealias StateReceiver<S> = (S) -> Unit
+typealias StateReceiver<S> = (newState: S) -> Unit
 
 /**
  * Filters [StateReceiver] by only passing states that are distinct from their predecessor state using [isStateDistinct]
