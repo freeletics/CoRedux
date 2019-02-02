@@ -14,5 +14,5 @@ class ViewBindingFactory(
     /**
      * creates a new ViewBinding
      */
-    fun <T> create(key: Class<*>, rootView: ViewGroup) = instantiatorMap[key]!!(rootView) as T
+    fun <T> create(key: Class<*>, rootView: ViewGroup) = (instantiatorMap.getValue(key))(rootView) as T
 }

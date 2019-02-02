@@ -143,9 +143,8 @@ class PopularRepositoriesSpec(
         given.block()
     }
 
-    fun runTests() {
+    fun runTests(connectionErrorMessage: String) {
         val server = config.mockWebServer
-        val connectionErrorMessage = "Failed to connect to /127.0.0.1:$MOCK_WEB_SERVER_PORT"
 
         given("the device is offline") {
 

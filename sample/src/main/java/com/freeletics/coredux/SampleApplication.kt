@@ -2,6 +2,7 @@ package com.freeletics.coredux
 
 import android.app.Application
 import android.view.ViewGroup
+import com.freeletics.coredux.di.ApplicationComponent
 import com.freeletics.coredux.di.ApplicationModule
 import com.freeletics.coredux.di.DaggerApplicationComponent
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +13,7 @@ open class SampleApplication : Application() {
         Timber.plant(Timber.DebugTree())
     }
 
-    val applicationComponent by lazy {
+    val applicationComponent: ApplicationComponent by lazy {
         DaggerApplicationComponent.builder().apply {
             componentBuilder(this)
         }.build()
