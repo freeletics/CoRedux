@@ -6,10 +6,6 @@ import android.arch.lifecycle.ViewModel
 import com.freeletics.coredux.businesslogic.pagination.Action
 import com.freeletics.coredux.businesslogic.pagination.PaginationStateMachine
 import com.freeletics.coredux.di.AndroidScheduler
-import com.jakewharton.rxrelay2.PublishRelay
-import com.jakewharton.rxrelay2.Relay
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.functions.Consumer
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -23,29 +19,19 @@ class PopularRepositoriesViewModel @Inject constructor(
     private val job = Job()
     override val coroutineContext: CoroutineContext get() = androidScheduler + job
 
-    private val inputRelay: Relay<Action> = PublishRelay.create()
     private val mutableState = MutableLiveData<PaginationStateMachine.State>()
-    private val disposables = CompositeDisposable()
 
-    val input: Consumer<Action> = inputRelay
-    val state: LiveData<PaginationStateMachine.State> = mutableState
-
-    init {
-        val paginationStore = paginationStateMachine.create(this)
-        disposables.add(inputRelay.subscribe {
-            paginationStore.dispatch(it)
-        })
-
-        paginationStore.subscribe({ newState: PaginationStateMachine.State ->
+    private val paginationStore = paginationStateMachine.create(this).also {
+        it.subscribe({ newState: PaginationStateMachine.State ->
             mutableState.value = newState
-        }.distinctUntilChangedBy { previousState, newState ->
-            previousState != newState
-        })
+        }.distinctUntilChanged())
     }
+
+    val dispatchAction: (Action) -> Unit = paginationStore::dispatch
+    val state: LiveData<PaginationStateMachine.State> = mutableState
 
     override fun onCleared() {
         super.onCleared()
         job.cancel()
-        disposables.dispose()
     }
 }
