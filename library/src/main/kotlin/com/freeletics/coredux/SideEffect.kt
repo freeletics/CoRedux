@@ -72,3 +72,35 @@ class SimpleSideEffect<S, A>(
         }
     }
 }
+
+/**
+ * Version of [SideEffect], that cancels currently executed [Job] and starts a new one.
+ *
+ * @param S state type
+ * @param A action type
+ * @param sideEffect function should check for given `action`/`state` combination and return either [Job] from
+ * `handler {}` function call or `null`, if side effect does not interested in `action`/`state` combination.
+ * If `handler {}` function will be called again on new input, while previous returned [Job] is still running -
+ * old one [Job] will be cancelled.
+ */
+class CancellableSideEffect<S, A>(
+    private val sideEffect: (
+        state: StateAccessor<S>,
+        action: A,
+        handler: (CoroutineScope.(SendChannel<A>) -> Unit) -> Job
+    ) -> Job?
+) : SideEffect<S, A> {
+    override fun CoroutineScope.start(
+        input: ReceiveChannel<A>,
+        stateAccessor: StateAccessor<S>,
+        output: SendChannel<A>
+    ): Job = launch {
+        var job: Job? = null
+        for (action in input) {
+            sideEffect(stateAccessor, action) { handler ->
+                job?.cancel()
+                launch { handler(output) }
+            }?.let { job = it }
+        }
+    }
+}

@@ -2,12 +2,9 @@ package com.freeletics.coredux
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.channels.filter
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -45,23 +42,17 @@ class LoggerSE: SideEffect<String, Int> {
     }
 }
 
-@UseExperimental(ObsoleteCoroutinesApi::class)
 internal fun multiplyActionSE(
     produceDelay: Long = 100L
-) : SideEffect<String, Int> = object : SideEffect<String, Int> {
-    override fun CoroutineScope.start(
-        input: ReceiveChannel<Int>,
-        stateAccessor: StateAccessor<String>,
-        output: SendChannel<Int>
-    ): Job = launch {
-        var job: Job? = null
-        for (action in input.filter { it in 100..1000 }) {
-            job?.cancel()
-            job = launch {
+) = CancellableSideEffect<String, Int> { _, action, handler ->
+    when (action) {
+        in 100..1000 -> handler { output ->
+            launch {
                 delay(produceDelay)
                 output.send(action * 20)
             }
         }
+        else -> null
     }
 }
 

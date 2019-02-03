@@ -11,18 +11,18 @@ kapt {
 }
 
 shot {
-    appId = 'com.freeletics.rxredux'
+    appId = 'com.freeletics.coredux'
 }
 
 android {
     compileSdkVersion versions.compileSdk
     defaultConfig {
-        applicationId "com.freeletics.rxredux"
+        applicationId "com.freeletics.coredux"
         targetSdkVersion versions.targetSdk
         minSdkVersion versions.minSdk
         versionCode 1
         versionName "1.0"
-        testInstrumentationRunner "com.freeletics.rxredux.SampleAppRunner"
+        testInstrumentationRunner "com.freeletics.coredux.SampleAppRunner"
     }
     buildTypes {
         release {
@@ -66,11 +66,8 @@ dependencies {
     implementation supportLibraries.design
     implementation supportLibraries.viewModel
     implementation libraries.retrofit
-    implementation libraries.retrofitRxJava
     implementation libraries.retrofitMoshi
-    implementation libraries.rxRelay
     implementation libraries.rxJava
-    implementation libraries.rxAndroid
     implementation libraries.timber
     implementation libraries.rxBinding
     implementation libraries.okhttp

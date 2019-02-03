@@ -55,7 +55,7 @@ class PopularRepositoriesActivityTest {
             screen = AndroidScreen(activityTestRule),
             stateHistory = StateHistory(AndroidStateRecorder()),
             config = ScreenConfig(mockWebServer = MockWebServer().setupForHttps())
-        ).runTests()
+        ).runTests("Failed to connect to /127.0.0.1:$MOCK_WEB_SERVER_PORT")
     }
 
     class AndroidScreen(

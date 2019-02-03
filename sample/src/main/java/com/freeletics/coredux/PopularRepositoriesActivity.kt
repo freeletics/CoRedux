@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import com.freeletics.coredux.businesslogic.pagination.Action
 import com.freeletics.coredux.util.viewModel
+import io.reactivex.Observable
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.android.synthetic.main.activity_main.*
 import javax.inject.Inject
@@ -42,18 +43,15 @@ class PopularRepositoriesActivity : AppCompatActivity() {
         })
 
         disposables.add(
-            viewBinding.endOfRecyclerViewReached
-                .map { Action.LoadNextPageAction }
-                .subscribe(viewModel.input)
+            Observable
+                .merge(
+                    viewBinding.endOfRecyclerViewReached.map { Action.LoadNextPageAction },
+                    viewBinding.retryLoadFirstPage.map { Action.LoadFirstPageAction }
+                )
+                .subscribe(viewModel.dispatchAction)
         )
 
-        viewModel.input.accept(Action.LoadFirstPageAction)
-
-        disposables.add(
-            viewBinding.retryLoadFirstPage
-                .map { Action.LoadFirstPageAction }
-                .subscribe(viewModel.input)
-        )
+        viewModel.dispatchAction(Action.LoadFirstPageAction)
     }
 
     override fun onDestroy() {

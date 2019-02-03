@@ -149,7 +149,7 @@ private class CoreduxStore<S: Any, A: Any>(
  * @param S The type of the state
  * @param A The type of the Actions
  */
-typealias Reducer<S, A> = (S, A) -> S
+typealias Reducer<S, A> = (currentState: S, newAction: A) -> S
 
 /**
  * Wraps [Reducer] call exception.
@@ -165,7 +165,7 @@ class ReducerException(
  *
  * State update will always be received on [createStore] [CoroutineScope] thread.
  */
-typealias StateReceiver<S> = (S) -> Unit
+typealias StateReceiver<S> = (newState: S) -> Unit
 
 /**
  * Filters [StateReceiver] by only passing states that are distinct from their predecessor state using [isStateDistinct]

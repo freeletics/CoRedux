@@ -26,15 +26,15 @@ class PopularRepositoriesJvmTest {
         val stateSubject: Subject<PaginationStateMachine.State> = ReplaySubject.create()
 
         override fun scrollToEndOfList() {
-            Observable.just(Action.LoadNextPageAction).subscribe(viewModel.input)
+            Observable.just(Action.LoadNextPageAction).subscribe(viewModel.dispatchAction)
         }
 
         override fun retryLoadingFirstPage() {
-            Observable.just(Action.LoadFirstPageAction).subscribe(viewModel.input)
+            Observable.just(Action.LoadFirstPageAction).subscribe(viewModel.dispatchAction)
         }
 
         override fun loadFirstPage() {
-            Observable.just(Action.LoadFirstPageAction).subscribe(viewModel.input)
+            Observable.just(Action.LoadFirstPageAction).subscribe(viewModel.dispatchAction)
         }
 
         override fun renderedStates(): Observable<PaginationStateMachine.State> = stateSubject
@@ -79,7 +79,7 @@ class PopularRepositoriesJvmTest {
                 config = ScreenConfig(it),
                 screen = screen,
                 stateHistory = StateHistory(screen)
-            ).runTests()
+            ).runTests("java.net.ConnectException")
         }
     }
 }
