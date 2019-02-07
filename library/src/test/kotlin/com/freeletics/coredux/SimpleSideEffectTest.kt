@@ -19,7 +19,7 @@ internal object SimpleSideEffectTest : Spek({
     describe("A ${SimpleSideEffect::class.simpleName}") {
         val scope by memoized { CoroutineScope(Dispatchers.Default) }
         val sideEffect by memoized {
-            SE { state, action, handler ->
+            SE("test") { state, action, _, handler ->
                 val currentState = state()
                 when {
                     action == 1 && currentState == "" -> handler {
@@ -33,11 +33,12 @@ internal object SimpleSideEffectTest : Spek({
         val inputChannel by memoized { Channel<Int>() }
         val outputChannel by memoized { Channel<Int>(100) }
         val stateAccessor by memoized { TestStateAccessor("") }
+        val logger by memoized { StubSideEffectLogger() }
 
         beforeEach {
             scope.launch {
                 with (sideEffect) {
-                    start(inputChannel, stateAccessor, outputChannel)
+                    start(inputChannel, stateAccessor, outputChannel, logger)
                 }
             }
         }

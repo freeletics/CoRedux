@@ -16,7 +16,7 @@ object CancellableSideEffectTest : Spek({
     describe("A ${CancellableSideEffect::class.simpleName}") {
         val scope by memoized { CoroutineScope(Dispatchers.Default)}
         val sideEffect by memoized {
-            CancellableSideEffect<String, Int> { state, action, handler ->
+            CancellableSideEffect<String, Int>("test") { state, action, _, handler ->
                 val currentState = state()
                 when {
                     action == 1 && currentState == "" -> handler { output ->
@@ -32,11 +32,12 @@ object CancellableSideEffectTest : Spek({
         val inputChannel by memoized { Channel<Int>() }
         val outputChannel by memoized { Channel<Int>() }
         val stateAccessor by memoized { TestStateAccessor("") }
+        val logger by memoized { StubSideEffectLogger() }
 
         beforeEach {
             scope.launch {
                 with(sideEffect) {
-                    start(inputChannel, stateAccessor, outputChannel)
+                    start(inputChannel, stateAccessor, outputChannel, logger)
                 }
             }
         }
