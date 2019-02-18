@@ -181,7 +181,9 @@ class PaginationStateMachine @Inject constructor(
     /**
      * Load the first Page
      */
-    private val loadFirstPageSideEffect = CancellableSideEffect<State, Action> { state, action, handler ->
+    private val loadFirstPageSideEffect = CancellableSideEffect<State, Action>(
+        name = "Load First Page"
+    ) { state, action, _, handler ->
         val currentState = state()
         if (action is Action.LoadFirstPageAction &&
             currentState !is ContainsItems) {
@@ -194,7 +196,9 @@ class PaginationStateMachine @Inject constructor(
     /**
      * A Side Effect that loads the next page
      */
-    private val loadNextPageSideEffect = CancellableSideEffect<State, Action> { state, action, handler ->
+    private val loadNextPageSideEffect = CancellableSideEffect<State, Action>(
+        name = "Load Next Page"
+    ) { state, action, _, handler ->
         when (action) {
             is Action.LoadNextPageAction -> handler { nextPage(state(), it) }
             else -> null
@@ -205,7 +209,9 @@ class PaginationStateMachine @Inject constructor(
      * Shows and hides an error after a given time.
      * In UI a snackbar showing an error message would be shown / hidden respectively
      */
-    private val showAndHideLoadingErrorSideEffect = CancellableSideEffect<State, Action> { _, action, handler ->
+    private val showAndHideLoadingErrorSideEffect = CancellableSideEffect<State, Action>(
+        name = "Show and Hide Loading Error"
+    ) { _, action, _, handler ->
         when {
             action is ErrorLoadingPageAction && action.page > 1 -> handler { output ->
                 launch {
@@ -220,6 +226,7 @@ class PaginationStateMachine @Inject constructor(
 
     fun create(coroutineScope: CoroutineScope): Store<State, Action> = coroutineScope
         .createStore(
+            name = "Pagination State Machine",
             initialState = State.LoadingFirstPageState,
             sideEffects = listOf(
                 loadFirstPageSideEffect,

@@ -19,9 +19,12 @@ object SimpleStoreTest : Spek({
     describe("A redux store without any side effects") {
         val stateReceiver by memoized { TestStateReceiver<String>() }
         val scope by memoized { CoroutineScope(Dispatchers.Default) }
+        val testLogger by memoized { TestLogger() }
         val store by memoized {
             scope.createStore<String, Int>(
-                initialState = ""
+                name = "SimpleStore",
+                initialState = "",
+                logSinks = listOf(testLogger)
             ) { currentState, newAction ->
                 when {
                     newAction >= 0 -> newAction.toString()
@@ -38,13 +41,35 @@ object SimpleStoreTest : Spek({
                 stateReceiver.assertStates("")
             }
 
+            it("should emit three log events") {
+                testLogger.assertLogEvents(
+                    LogEvent.StoreCreated,
+                    LogEvent.ReducerEvent.Start,
+                    LogEvent.ReducerEvent.DispatchState("")
+                )
+            }
+
             context("On new action 1") {
                 beforeEach {
                     store.dispatch(1)
                 }
 
-                it("should emit \"1\"") {
+                it("should first emit input action log event") {
+                    assertEquals(
+                        LogEvent.ReducerEvent.InputAction(1, ""),
+                        testLogger.receivedLogEntries(4)[3].event
+                    )
+                }
+
+                it("should emit \"1\" state") {
                     assertEquals("1", stateReceiver.receivedStates(2).last())
+                }
+
+                it("should last emit dispatch state log event") {
+                    assertEquals(
+                        LogEvent.ReducerEvent.DispatchState("1"),
+                        testLogger.receivedLogEntries(5)[4].event
+                    )
                 }
             }
 
@@ -77,6 +102,11 @@ object SimpleStoreTest : Spek({
         context("that is not subscribed") {
             context("on new action 1") {
                 beforeEach { store.dispatch(1) }
+
+                it("should emit store create as a first log event") {
+                    testLogger.assertLogEvents(LogEvent.StoreCreated)
+                }
+
                 context("and when new subscriber subscribes") {
                     beforeEach { store.subscribe(stateReceiver) }
 
