@@ -22,9 +22,9 @@ class PopularRepositoriesViewModel @Inject constructor(
     private val mutableState = MutableLiveData<PaginationStateMachine.State>()
 
     private val paginationStore = paginationStateMachine.create(this).also {
-        it.subscribe({ newState: PaginationStateMachine.State ->
+        it.subscribeToChangedStateUpdates { newState: PaginationStateMachine.State ->
             mutableState.value = newState
-        }.distinctUntilChanged())
+        }
     }
 
     val dispatchAction: (Action) -> Unit = paginationStore::dispatch
