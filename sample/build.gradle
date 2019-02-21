@@ -80,7 +80,7 @@ dependencies {
     implementation libraries.moshi
     implementation libraries.dagger
     kapt libraries.daggerCompiler
-    implementation project(':library')
+    implementation project(':library:core')
     implementation testLibraries.okhttpTls
 
     testImplementation testLibraries.junit

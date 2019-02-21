@@ -15,7 +15,7 @@ branches:
 notifications:
   email: false
 sudo: false
-script: "./gradlew :library:build :library:test :sample:assembleDebug :sample:testDebug"
+script: "./gradlew :library:core:build :library:core:test :sample:assembleDebug :sample:testDebug"
 cache:
   directories:
   - "$HOME/.gradle"
