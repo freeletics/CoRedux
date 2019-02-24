@@ -50,7 +50,7 @@ internal fun multiplyActionSE(
     produceDelay: Long = 100L
 ) = CancellableSideEffect<String, Int>("multiplyActionSE") { _, action, _, handler ->
     when (action) {
-        in 100..1000 -> handler { output ->
+        in 100..1000 -> handler { _, output ->
             launch {
                 delay(produceDelay)
                 output.send(action * 20)

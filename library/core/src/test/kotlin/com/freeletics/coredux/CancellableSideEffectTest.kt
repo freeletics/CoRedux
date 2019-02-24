@@ -19,7 +19,7 @@ object CancellableSideEffectTest : Spek({
             CancellableSideEffect<String, Int>("test") { state, action, _, handler ->
                 val currentState = state()
                 when {
-                    action == 1 && currentState == "" -> handler { output ->
+                    action == 1 && currentState == "" -> handler { _, output ->
                         launch {
                             delay(10)
                             (2..4).forEach { output.send(it) }

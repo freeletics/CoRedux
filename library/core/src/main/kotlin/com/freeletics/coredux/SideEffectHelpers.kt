@@ -24,7 +24,7 @@ class SimpleSideEffect<S : Any, A : Any>(
         state: StateAccessor<S>,
         action: A,
         logger: SideEffectLogger,
-        handler: (suspend () -> A?) -> Job
+        handler: (suspend (name: String) -> A?) -> Job
     ) -> Job?
 ) : SideEffect<S, A> {
 
@@ -49,7 +49,7 @@ class SimpleSideEffect<S : Any, A : Any>(
                     }
                     cancel()
                 }
-                launch { handler()?.let {
+                launch { handler(name)?.let {
                     logger.logSideEffectEvent { LogEvent.SideEffectEvent.DispatchingToReducer(name, it) }
                     output.send(it)
                 } }
@@ -75,7 +75,7 @@ class CancellableSideEffect<S : Any, A : Any>(
         state: StateAccessor<S>,
         action: A,
         logger: SideEffectLogger,
-        handler: (CoroutineScope.(SendChannel<A>) -> Unit) -> Job
+        handler: (CoroutineScope.(name: String, output: SendChannel<A>) -> Unit) -> Job
     ) -> Job?
 ) : SideEffect<S, A> {
 
@@ -100,7 +100,7 @@ class CancellableSideEffect<S : Any, A : Any>(
                     }
                     cancel()
                 }
-                launch { handler(output) }
+                launch { handler(name, output) }
             }?.let { job = it }
         }
     }
