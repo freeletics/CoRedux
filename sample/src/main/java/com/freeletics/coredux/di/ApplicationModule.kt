@@ -1,16 +1,12 @@
 package com.freeletics.coredux.di
 
-import com.freeletics.coredux.LogSink
 import com.freeletics.coredux.ViewBindingFactory
 import com.freeletics.coredux.ViewBindingInstantiatorMap
 import com.freeletics.coredux.businesslogic.github.GithubApi
-import com.freeletics.coredux.log.android.AndroidLogSink
 import com.jakewharton.retrofit2.adapter.kotlin.coroutines.CoroutineCallAdapterFactory
 import dagger.Module
 import dagger.Provides
-import dagger.multibindings.IntoSet
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.GlobalScope
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -50,9 +46,4 @@ open class ApplicationModule(
     @Singleton
     @AndroidScheduler
     fun androidScheduler() = androidScheduler
-
-    @Provides
-    @IntoSet
-    @Singleton
-    fun androidStoreLogger(): LogSink = AndroidLogSink(GlobalScope)
 }
