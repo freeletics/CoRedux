@@ -81,6 +81,7 @@ dependencies {
     implementation libraries.dagger
     kapt libraries.daggerCompiler
     implementation project(':library:core')
+    implementation project(':library:log:android')
     implementation testLibraries.okhttpTls
 
     testImplementation testLibraries.junit

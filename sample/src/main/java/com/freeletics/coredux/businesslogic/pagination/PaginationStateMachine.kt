@@ -1,6 +1,9 @@
 package com.freeletics.coredux.businesslogic.pagination
 
 import com.freeletics.coredux.CancellableSideEffect
+import com.freeletics.coredux.LogEvent
+import com.freeletics.coredux.LogSink
+import com.freeletics.coredux.SideEffectLogger
 import com.freeletics.coredux.Store
 import com.freeletics.coredux.businesslogic.github.GithubApiFacade
 import com.freeletics.coredux.businesslogic.github.GithubRepository
@@ -95,7 +98,8 @@ private data class StartLoadingNextPage(val page: Int) : Action() {
  * It can have the States described in [State].
  */
 class PaginationStateMachine @Inject constructor(
-    private val github: GithubApiFacade
+    private val github: GithubApiFacade,
+    private val loggers: MutableSet<LogSink>
 ) {
 
     private interface ContainsItems {
@@ -183,11 +187,14 @@ class PaginationStateMachine @Inject constructor(
      */
     private val loadFirstPageSideEffect = CancellableSideEffect<State, Action>(
         name = "Load First Page"
-    ) { state, action, _, handler ->
+    ) { state, action, logger, handler ->
         val currentState = state()
         if (action is Action.LoadFirstPageAction &&
             currentState !is ContainsItems) {
-            handler { nextPage(currentState, it) }
+            handler { name, output ->
+                logger.logSideEffectEvent { LogEvent.SideEffectEvent.Custom(name, "Start loading first page") }
+                nextPage(currentState, output, name, logger)
+            }
         } else {
             null
         }
@@ -198,9 +205,12 @@ class PaginationStateMachine @Inject constructor(
      */
     private val loadNextPageSideEffect = CancellableSideEffect<State, Action>(
         name = "Load Next Page"
-    ) { state, action, _, handler ->
+    ) { state, action, logger, handler ->
         when (action) {
-            is Action.LoadNextPageAction -> handler { nextPage(state(), it) }
+            is Action.LoadNextPageAction -> handler { name, output ->
+                logger.logSideEffectEvent { LogEvent.SideEffectEvent.Custom(name, "Start loading next page") }
+                nextPage(state(), output, name, logger)
+            }
             else -> null
         }
     }
@@ -211,13 +221,24 @@ class PaginationStateMachine @Inject constructor(
      */
     private val showAndHideLoadingErrorSideEffect = CancellableSideEffect<State, Action>(
         name = "Show and Hide Loading Error"
-    ) { _, action, _, handler ->
+    ) { _, action, logger, handler ->
         when {
-            action is ErrorLoadingPageAction && action.page > 1 -> handler { output ->
+            action is ErrorLoadingPageAction && action.page > 1 -> handler { name, output ->
                 launch {
-                    output.send(ShowLoadNextPageErrorAction(action.error, action.page))
+                    ShowLoadNextPageErrorAction(action.error, action.page).run {
+                        logger.logSideEffectEvent {
+                            LogEvent.SideEffectEvent.DispatchingToReducer(name, this)
+                        }
+                        output.send(this)
+                    }
                     delay(TimeUnit.SECONDS.toMillis(3))
-                    output.send(HideLoadNextPageErrorAction(action.error, action.page))
+
+                    HideLoadNextPageErrorAction(action.error, action.page).run {
+                        logger.logSideEffectEvent {
+                            LogEvent.SideEffectEvent.DispatchingToReducer(name, this)
+                        }
+                        output.send(this)
+                    }
                 }
             }
             else -> null
@@ -228,6 +249,7 @@ class PaginationStateMachine @Inject constructor(
         .createStore(
             name = "Pagination State Machine",
             initialState = State.LoadingFirstPageState,
+            logSinks = loggers.toList(),
             sideEffects = listOf(
                 loadFirstPageSideEffect,
                 loadNextPageSideEffect,
@@ -240,11 +262,20 @@ class PaginationStateMachine @Inject constructor(
      * Loads the next Page
      */
     @UseExperimental(ExperimentalCoroutinesApi::class)
-    private fun CoroutineScope.nextPage(s: State, output: SendChannel<Action>): Job = launch {
+    private fun CoroutineScope.nextPage(
+        s: State,
+        output: SendChannel<Action>,
+        sideEffectName: String,
+        logger: SideEffectLogger
+    ): Job = launch {
         val nextPage = (if (s is ContainsItems) s.page else 0) + 1
 
-        Timber.d("NextPage: sending StartLoadingNextPage action, $nextPage")
-        output.send(StartLoadingNextPage(nextPage))
+        StartLoadingNextPage(nextPage).run {
+            logger.logSideEffectEvent {
+                LogEvent.SideEffectEvent.DispatchingToReducer(sideEffectName, this)
+            }
+            output.send(this)
+        }
 
         delay(TimeUnit.SECONDS.toMillis(1)) // Add some delay to make the loading indicator appear
 
@@ -252,13 +283,24 @@ class PaginationStateMachine @Inject constructor(
             val result = withContext(Dispatchers.IO) {
                 github.loadNextPage(nextPage).await()
             }
-            output.send(PageLoadedAction(
+            PageLoadedAction(
                 itemsLoaded = result.items,
                 page = nextPage
-            ))
+            ).run {
+                logger.logSideEffectEvent {
+                    LogEvent.SideEffectEvent.DispatchingToReducer(sideEffectName, this)
+                }
+                output.send(this)
+            }
         } catch (error: Throwable) {
             Timber.w("Got error $error")
-            output.send(ErrorLoadingPageAction(error, nextPage))
+            logger.logSideEffectEvent {
+                LogEvent.SideEffectEvent.Custom(sideEffectName, "Error on loading next page: $error")
+            }
+            ErrorLoadingPageAction(error, nextPage).run {
+                logger.logSideEffectEvent { LogEvent.SideEffectEvent.DispatchingToReducer(sideEffectName, this) }
+                output.send(this)
+            }
         }
     }
 
