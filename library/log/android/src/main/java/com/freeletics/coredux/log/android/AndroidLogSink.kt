@@ -76,7 +76,7 @@ class AndroidLogSink(
         )
         is LogEvent.SideEffectEvent.Custom -> storeName.logWithTimeDiff(
             timeDiff,
-            "[(SE) ${event.name}] ${event.events.joinToString(", ")}",
+            "[(SE) ${event.name}] $event",
             Log::d
         )
     }
