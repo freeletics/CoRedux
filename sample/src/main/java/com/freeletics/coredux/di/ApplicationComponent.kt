@@ -5,7 +5,10 @@ import dagger.Component
 import javax.inject.Singleton
 
 @Singleton
-@Component(modules =[ApplicationModule::class] )
+@Component(modules =[
+    ApplicationModule::class,
+    LogSinksModule::class
+] )
 interface ApplicationComponent {
 
     fun inject(into: PopularRepositoriesActivity)

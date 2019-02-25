@@ -7,7 +7,10 @@ import dagger.Component
 import javax.inject.Singleton
 
 @Singleton
-@Component(modules =[ApplicationModule::class] )
+@Component(modules =[
+    ApplicationModule::class,
+    TestLogSinksModule::class
+] )
 interface TestComponent {
 
     fun paginationStateMachine(): PaginationStateMachine

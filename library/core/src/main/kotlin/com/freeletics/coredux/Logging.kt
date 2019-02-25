@@ -137,13 +137,8 @@ sealed class LogEvent {
          */
         class Custom(
             override val name: String,
-            vararg val events: Any
-        ) : SideEffectEvent() {
-            override fun toString(): String {
-                val eventsAsString = events.joinToString(",") { it.toString() }
-                return "Custom(name=$name, customEvents=[$eventsAsString])"
-            }
-        }
+            val event: Any
+        ) : SideEffectEvent()
     }
 }
 
