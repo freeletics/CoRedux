@@ -119,7 +119,7 @@ object SimpleStoreTest : Spek({
                     context("and when second subscriber subscribes after 1 ms") {
                         beforeEach {
                             runBlocking {
-                                delay(1)
+                                delay(10)
                                 store.subscribe(secondStateReceiver)
                             }
                         }
