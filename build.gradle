@@ -20,6 +20,7 @@ buildscript {
     ext.isCIServer = System.getenv().containsKey("CI")
     logger.warn("Running on CI: ${isCIServer}")
     ext.dokka = "${project.rootDir}/scripts/dokka.gradle"
+    ext.dokka_android = "${project.rootDir}/scripts/dokka-android.gradle"
     ext.publishing = "${project.rootDir}/scripts/publishing.gradle"
 }
 
