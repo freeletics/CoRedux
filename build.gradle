@@ -16,6 +16,8 @@ buildscript {
         classpath gradlePlugins.dokka
         classpath gradlePlugins.kotlin
     }
+
+    ext.dokka = "${project.rootDir}/scripts/dokka.gradle"
 }
 
 allprojects {
