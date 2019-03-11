@@ -1,16 +1,7 @@
 apply plugin: 'java-library'
 apply plugin: 'kotlin'
 apply from: dokka
-
-logger.warn("Running on CI: ${isCIServer}")
-
-if (isCIServer) {
-    apply plugin: "com.vanniktech.maven.publish"
-    mavenPublish {
-        releaseRepositoryUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
-        snapshotRepositoryUrl = "https://oss.sonatype.org/content/repositories/snapshots/"
-    }
-}
+apply from: publishing
 
 test {
     useJUnitPlatform {
