@@ -3,4 +3,11 @@ apply plugin: 'org.jetbrains.dokka'
 dokka {
     outputFormat = 'html'
     outputDirectory = "$buildDir/javadoc"
+
+    externalDocumentationLink {
+        url = new URL("https://kotlinlang.org/api/latest/jvm/stdlib/")
+    }
+    externalDocumentationLink {
+        url = new URL("https://kotlin.github.io/kotlinx.coroutines/kotlinx-coroutines-core/")
+    }
 }
