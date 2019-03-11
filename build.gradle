@@ -17,6 +17,7 @@ buildscript {
         classpath gradlePlugins.kotlin
     }
 
+    ext.isCIServer = System.getenv().containsKey("CI")
     ext.dokka = "${project.rootDir}/scripts/dokka.gradle"
 }
 

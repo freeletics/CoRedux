@@ -2,10 +2,9 @@ apply plugin: 'java-library'
 apply plugin: 'kotlin'
 apply from: dokka
 
-gradle.ext.isCiServer = System.getenv().containsKey("CI")
-logger.warn("Running on CI: ${gradle.ext.isCiServer}")
+logger.warn("Running on CI: ${isCIServer}")
 
-if (gradle.ext.isCiServer) {
+if (isCIServer) {
     apply plugin: "com.vanniktech.maven.publish"
     mavenPublish {
         releaseRepositoryUrl = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
