@@ -28,7 +28,7 @@ else
   echo "org.gradle.parallel=false" >> gradle.properties
   echo "org.gradle.configureondemand=false" >> gradle.properties
   ./gradlew --stop
-  ./gradlew  --no-daemon :library:uploadArchives -Dorg.gradle.parallel=false -Dorg.gradle.configureondemand=false
+  ./gradlew  --no-daemon uploadArchives -Dorg.gradle.parallel=false -Dorg.gradle.configureondemand=false
   rm freeletics.gpg
   git reset --hard
   echo "Deployed!"

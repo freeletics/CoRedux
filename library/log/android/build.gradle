@@ -1,5 +1,7 @@
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
+apply from: dokka_android
+apply from: publishing
 
 android {
     compileSdkVersion versions.compileSdk

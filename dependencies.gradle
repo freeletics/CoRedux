@@ -5,7 +5,7 @@ ext.versions = [
         minSdk                 : 21,
 
         shot                   : '2.0.0',
-        mavenPublish           : '0.6.0',
+        mavenPublish           : '0.8.0',
         dokka                  : '0.9.17',
 
         dagger                 : '2.16',
