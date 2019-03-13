@@ -1,0 +1,79 @@
+version: 2
+
+# Common anchors
+# PR cache anchors
+gradle_cache_key: &gradle_cache_key
+  key: v1-dependencies-{{ checksum "dependencies.gradle" }}
+restore_gradle_cache: &restore_gradle_cache
+  restore_cache:
+    <<: *gradle_cache_key
+save_gradle_cache: &save_gradle_cache
+  save_cache:
+    <<: *gradle_cache_key
+    paths:
+      - ~/.gradle/caches
+      - ~/.gradle/wrapper
+
+jobs:
+  build_and_test:
+    docker:
+      - image: circleci/android:api-28
+    working_directory: ~/repo
+    environment:
+      JVM_OPTS: -Xmx3200m
+      TERM: dumb
+    steps:
+      - checkout
+      - *restore_gradle_cache
+      - run:
+          name: Coredux core build
+          command: ./gradlew :library:core:build
+      - run:
+          name: Coredux core test
+          command: ./gradlew :library:core:test
+      - run:
+          name: Android logsing build
+          command: ./gradlew :library:log:android:assemble
+      - run:
+          name: Build Sample app
+          command: ./gradlew :sample:assembleDebug
+      - run:
+          name: Run sample app tests
+          command: ./gradlew :sample:testDebug
+      - *save_gradle_cache
+
+  deploy:
+    docker:
+      - image: circleci/android:api-28
+    working_directory: ~/repo
+    environment:
+      JVM_OPTS: -Xmx3200m
+      TERM: dumb
+    steps:
+      - checkout
+      - *restore_gradle_cache
+      - run:
+          name: Deploy artifacts
+          command: ./deploy.sh
+
+workflows:
+  version: 2
+
+  master-pipeline:
+    jobs:
+      - build_and_test:
+          filters:
+            branches:
+              only:
+                - master
+      - deploy:
+          requires:
+            - build_and_test
+
+  check-pr:
+    jobs:
+      - build_and_test:
+          filters:
+            branches:
+              ignore:
+                - master
