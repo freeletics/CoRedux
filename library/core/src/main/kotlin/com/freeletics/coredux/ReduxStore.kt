@@ -11,6 +11,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * A [createStore] is a Kotlin coroutine based implementation of Redux and redux.js.org.
@@ -130,12 +133,23 @@ private class CoreduxStore<S: Any, A: Any>(
     private val actionsDispatchChannel: SendChannel<A>,
     reducerCoroutineBuilder: ((S) -> Unit) -> Job
 ) : Store<S, A> {
+    private var stateReceiversList = emptyList<StateReceiver<S>>()
+
+    private val lock = ReentrantReadWriteLock()
+
     private val reducerCoroutine = reducerCoroutineBuilder { newState ->
-        stateReceiversList.forEach {
-            it(newState)
+        lock.read {
+            stateReceiversList.forEach {
+                it(newState)
+            }
+        }
+    }.also {
+        it.invokeOnCompletion {
+            lock.write {
+                stateReceiversList = emptyList()
+            }
         }
     }
-    private var stateReceiversList = emptyList<StateReceiver<S>>()
 
     @UseExperimental(ExperimentalCoroutinesApi::class)
     override fun dispatch(action: A) {
@@ -148,16 +162,22 @@ private class CoreduxStore<S: Any, A: Any>(
 
 
     override fun subscribe(subscriber: StateReceiver<S>) {
-        val receiversIsEmpty = stateReceiversList.isEmpty()
-        stateReceiversList = stateReceiversList + subscriber
-        if (receiversIsEmpty &&
-            !reducerCoroutine.isActive) {
-            reducerCoroutine.start()
+        if (reducerCoroutine.isCompleted) throw IllegalStateException("CoroutineScope is cancelled")
+
+        lock.write {
+            val receiversIsEmpty = stateReceiversList.isEmpty()
+            stateReceiversList += subscriber
+            if (receiversIsEmpty &&
+                !reducerCoroutine.isActive) {
+                reducerCoroutine.start()
+            }
         }
     }
 
     override fun unsubscribe(subscriber: StateReceiver<S>) {
-        stateReceiversList = stateReceiversList - subscriber
+        lock.write {
+            stateReceiversList -= subscriber
+        }
     }
 }
 
