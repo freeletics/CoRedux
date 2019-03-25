@@ -130,12 +130,17 @@ private class CoreduxStore<S: Any, A: Any>(
     private val actionsDispatchChannel: SendChannel<A>,
     reducerCoroutineBuilder: ((S) -> Unit) -> Job
 ) : Store<S, A> {
+    private var stateReceiversList = emptyList<StateReceiver<S>>()
+
     private val reducerCoroutine = reducerCoroutineBuilder { newState ->
         stateReceiversList.forEach {
             it(newState)
         }
+    }.also {
+        it.invokeOnCompletion {
+            stateReceiversList = emptyList()
+        }
     }
-    private var stateReceiversList = emptyList<StateReceiver<S>>()
 
     @UseExperimental(ExperimentalCoroutinesApi::class)
     override fun dispatch(action: A) {
@@ -148,8 +153,10 @@ private class CoreduxStore<S: Any, A: Any>(
 
 
     override fun subscribe(subscriber: StateReceiver<S>) {
+        if (reducerCoroutine.isCompleted) throw IllegalStateException("CoroutineScope is cancelled")
+
         val receiversIsEmpty = stateReceiversList.isEmpty()
-        stateReceiversList = stateReceiversList + subscriber
+        stateReceiversList += subscriber
         if (receiversIsEmpty &&
             !reducerCoroutine.isActive) {
             reducerCoroutine.start()
@@ -157,7 +164,7 @@ private class CoreduxStore<S: Any, A: Any>(
     }
 
     override fun unsubscribe(subscriber: StateReceiver<S>) {
-        stateReceiversList = stateReceiversList - subscriber
+        stateReceiversList -= subscriber
     }
 }
 
