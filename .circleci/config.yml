@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  gradle-publish: freeletics/gradle-publish@1.0.1
+  gradle-publish: freeletics/gradle-publish@1.0.2
 
 # Common anchors
 # PR cache anchors
