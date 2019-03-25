@@ -11,6 +11,9 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
+import kotlin.concurrent.write
 
 /**
  * A [createStore] is a Kotlin coroutine based implementation of Redux and redux.js.org.
@@ -132,13 +135,19 @@ private class CoreduxStore<S: Any, A: Any>(
 ) : Store<S, A> {
     private var stateReceiversList = emptyList<StateReceiver<S>>()
 
+    private val lock = ReentrantReadWriteLock()
+
     private val reducerCoroutine = reducerCoroutineBuilder { newState ->
-        stateReceiversList.forEach {
-            it(newState)
+        lock.read {
+            stateReceiversList.forEach {
+                it(newState)
+            }
         }
     }.also {
         it.invokeOnCompletion {
-            stateReceiversList = emptyList()
+            lock.write {
+                stateReceiversList = emptyList()
+            }
         }
     }
 
@@ -155,16 +164,20 @@ private class CoreduxStore<S: Any, A: Any>(
     override fun subscribe(subscriber: StateReceiver<S>) {
         if (reducerCoroutine.isCompleted) throw IllegalStateException("CoroutineScope is cancelled")
 
-        val receiversIsEmpty = stateReceiversList.isEmpty()
-        stateReceiversList += subscriber
-        if (receiversIsEmpty &&
-            !reducerCoroutine.isActive) {
-            reducerCoroutine.start()
+        lock.write {
+            val receiversIsEmpty = stateReceiversList.isEmpty()
+            stateReceiversList += subscriber
+            if (receiversIsEmpty &&
+                !reducerCoroutine.isActive) {
+                reducerCoroutine.start()
+            }
         }
     }
 
     override fun unsubscribe(subscriber: StateReceiver<S>) {
-        stateReceiversList -= subscriber
+        lock.write {
+            stateReceiversList -= subscriber
+        }
     }
 }
 
