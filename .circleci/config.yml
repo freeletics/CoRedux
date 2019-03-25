@@ -1,4 +1,7 @@
-version: 2
+version: 2.1
+
+orbs:
+  gradle-publish: freeletics/gradle-publish@1.0.1
 
 # Common anchors
 # PR cache anchors
@@ -42,20 +45,6 @@ jobs:
           command: ./gradlew :sample:testDebug
       - *save_gradle_cache
 
-  deploy:
-    docker:
-      - image: circleci/android:api-28
-    working_directory: ~/repo
-    environment:
-      JVM_OPTS: -Xmx3200m
-      TERM: dumb
-    steps:
-      - checkout
-      - *restore_gradle_cache
-      - run:
-          name: Deploy artifacts
-          command: ./deploy.sh
-
 workflows:
   version: 2
 
@@ -66,7 +55,10 @@ workflows:
             branches:
               only:
                 - master
-      - deploy:
+      - gradle-publish/publish_artifacts:
+          executor: gradle-publish/circleci-android
+          working_directory: ~/repo
+          context: "android-maven-publish"
           requires:
             - build_and_test
 
