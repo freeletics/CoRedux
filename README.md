@@ -164,7 +164,7 @@ val sideEffect = object : SideEffect<Int, CalculatorAction> {
 }
 ```
 
-You must register you `sideEffect` inside `createStore(sideEffects = listOf(sideEffect))`:
+You must register your `sideEffect` inside `createStore(sideEffects = listOf(sideEffect))`:
 ```kotlin
 val storeWithSideEffect = coroutineScope.createStore<Int, CalculatorAction>(
     name = "Calculator",
