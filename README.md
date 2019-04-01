@@ -41,7 +41,9 @@ implementation "com.freeletics.coredux:core:1.0.0"
 ### Additional artifacts
 
 Following additional artifacts are also available:
+- `com.freeletics.coredux:log-common:1.0.1-SNAPSHOT` - provides abstract logger `LogSink` implementation
 - `com.freeletics.coredux:log-android:1.0.0` - provides `LogSink` implementation, that utilizes `android.util.Log` class to print log messages
+t- `com.freeletics.coredux:log-timber:1.0.1-SNAPSHOT` - provides `LogSink` implementation, that utilizes [Timber](https://github.com/JakeWharton/timber) logger
 
 ## What is CoRedux
 
