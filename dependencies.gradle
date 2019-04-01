@@ -11,7 +11,7 @@ ext.versions = [
         dagger                 : '2.21',
         kotlin                 : '1.3.21',
         coroutines             : '1.1.1',
-        rxJava                 : '2.1.9',
+        rxJava                 : '2.2.8',
         rxBinding              : '2.0.0',
         okhttp                 : '3.12.1',
 
