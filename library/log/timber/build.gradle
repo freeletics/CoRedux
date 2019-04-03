@@ -13,6 +13,8 @@ android {
 
 dependencies {
     api project(":library:log:common")
+    
+    implementation libraries.timber
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile.class).all {
