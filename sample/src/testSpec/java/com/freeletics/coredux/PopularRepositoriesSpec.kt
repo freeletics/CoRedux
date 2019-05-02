@@ -143,8 +143,9 @@ class PopularRepositoriesSpec(
         given.block()
     }
 
-    fun runTests(connectionErrorMessage: String) {
+    fun runTests() {
         val server = config.mockWebServer
+        val connectionErrorMessage = "Failed to connect to /127.0.0.1:$MOCK_WEB_SERVER_PORT"
 
         given("the device is offline") {
 
@@ -157,9 +158,7 @@ class PopularRepositoriesSpec(
                 "shows loading first page" byRendering PaginationStateMachine.State.LoadingFirstPageState
 
                 "shows error loading first page" byRendering
-                        PaginationStateMachine.State.ErrorLoadingFirstPageState(
-                            connectionErrorMessage
-                        )
+                        PaginationStateMachine.State.ErrorLoadingFirstPageState(connectionErrorMessage)
             }
         }
 
