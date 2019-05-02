@@ -36,3 +36,8 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+tasks.withType(Wrapper).configureEach {
+    gradleVersion = versions.gradle
+    distributionType = Wrapper.DistributionType.BIN
+}
