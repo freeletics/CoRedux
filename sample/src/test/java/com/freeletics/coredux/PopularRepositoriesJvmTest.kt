@@ -79,7 +79,7 @@ class PopularRepositoriesJvmTest {
                 config = ScreenConfig(it),
                 screen = screen,
                 stateHistory = StateHistory(screen)
-            ).runTests("java.net.ConnectException")
+            ).runTests()
         }
     }
 }
