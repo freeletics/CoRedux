@@ -4,6 +4,8 @@ ext.versions = [
         targetSdk              : 28,
         minSdk                 : 21,
 
+        gradle                 : "5.4.1",
+
         shot                   : '2.2.0',
         mavenPublish           : '0.8.0',
         dokka                  : '0.9.17',
