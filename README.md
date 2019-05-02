@@ -35,7 +35,7 @@ repositories {
     }
 }
 
-implementation "com.freeletics.coredux:core:1.1.0"
+implementation "com.freeletics.coredux:core:1.2.0-SNAPSHOT"
 ```
 
 ### Additional artifacts
