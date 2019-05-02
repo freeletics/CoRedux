@@ -76,7 +76,7 @@ abstract class LoggerLogSink(
         )
         is LogEvent.SideEffectEvent.Custom -> storeName.logWithTimeDiff(
             timeDiff,
-            "[(SE) ${event.name}] $event",
+            "[(SE) ${event.name}] ${event.event}",
             logger = ::debug
         )
     }
