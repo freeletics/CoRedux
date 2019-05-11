@@ -88,4 +88,5 @@ ext.testLibraries = [
         testRules           : "com.android.support.test:rules:$versions.testRunner",
         screengrab          : "tools.fastlane:screengrab:$versions.screengrab",
         deviceAnimationRule : "com.github.VictorAlbertos:DeviceAnimationTestRule:$versions.deviceAnimationRule",
+        coroutinesTest      : "org.jetbrains.kotlinx:kotlinx-coroutines-test:$versions.coroutines"
 ]
