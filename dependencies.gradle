@@ -28,7 +28,7 @@ ext.versions = [
 
         junit                  : '4.12',
         junit5                 : '1.4.2',
-        spek2                  : '2.0.3',
+        spek2                  : '2.0.4',
         kotlinMockito          : '1.5.0',
         assertJ                : '3.8.0',
         espresso               : '3.0.2',
