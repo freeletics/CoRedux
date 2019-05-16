@@ -62,6 +62,19 @@ class ReducerBuilder<S : Any, A : Any> {
         reducerConditionsBuilders.add(reducer)
     }
 
+    infix fun <AC : A> ActionTypeWithCondition<AC>.produce(
+        producer: (currentState: S, newAction: AC) -> S
+    ) {
+        reducerConditionsBuilders.add { currentState, newAction ->
+            if (actionType.isInstance(newAction) &&
+                additionalCondition(newAction as AC)) {
+                producer(currentState, newAction)
+            } else {
+                currentState
+            }
+        }
+    }
+
     internal fun build(): Reducer<S, A> {
         require(reducerConditionsBuilders.isNotEmpty()) {
             "No reducers was defined"
