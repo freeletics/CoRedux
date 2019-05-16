@@ -3,6 +3,7 @@ package com.freeletics.coredux.dsl
 import com.freeletics.coredux.Reducer
 import kotlin.reflect.KClass
 
+@Suppress("UNCHECKED_CAST")
 class ReducerBuilder<S : Any, A : Any> {
     internal lateinit var initialState: S
     @PublishedApi
@@ -12,16 +13,16 @@ class ReducerBuilder<S : Any, A : Any> {
         this.initialState = initialState
     }
 
-    inline fun <reified T : S> onState(
-        noinline additionalCondition: (T) -> Boolean = { true }
-    ) = StateTypeWithCondition(T::class, additionalCondition)
+    inline fun <reified SC : S> onState(
+        noinline additionalCondition: (SC) -> Boolean = { true }
+    ) = StateTypeWithCondition(SC::class, additionalCondition)
 
-    inline fun <reified T : A> onAction(
-        noinline additionalCondition: (T) -> Boolean = { true }
-    ) = ActionTypeWithCondition(T::class, additionalCondition)
+    inline fun <reified SC : A> onAction(
+        noinline additionalCondition: (SC) -> Boolean = { true }
+    ) = ActionTypeWithCondition(SC::class, additionalCondition)
 
-    infix fun <T : S, Z : A> StateTypeWithCondition<T>.and(
-        action: ActionTypeWithCondition<Z>
+    infix fun <SC : S, AC : A> StateTypeWithCondition<SC>.and(
+        action: ActionTypeWithCondition<AC>
     ) = StateAndActionWithConditions(
         stateType,
         action.actionType,
@@ -29,16 +30,16 @@ class ReducerBuilder<S : Any, A : Any> {
         action.additionalCondition
     )
 
-    infix operator fun <T : S, Z : A> StateTypeWithCondition<T>.plus(
-        action: ActionTypeWithCondition<Z>
+    operator fun <SC : S, AC : A> StateTypeWithCondition<SC>.plus(
+        action: ActionTypeWithCondition<AC>
     ) = and(action)
 
-    infix fun <T : S> StateTypeWithCondition<T>.produce(
-        producer: (state: T, action: A) -> S
+    infix fun <SC : S> StateTypeWithCondition<SC>.produce(
+        producer: (currentState: SC, newAction: A) -> S
     ) {
-        val reducer: Reducer<S, A> = { currentState, newAction ->
+        reducerConditionsBuilders.add { currentState, newAction ->
             if (stateType.isInstance(currentState) &&
-                additionalCondition(currentState as T)) {
+                additionalCondition(currentState as SC)) {
                 producer(currentState, newAction)
             } else {
                 currentState
@@ -46,20 +47,19 @@ class ReducerBuilder<S : Any, A : Any> {
         }
     }
 
-    infix fun <T : S, Z : A> StateAndActionWithConditions<T, Z>.produce(
-        producer: (state: T, action: Z) -> S
+    infix fun <SC : S, AC : A> StateAndActionWithConditions<SC, AC>.produce(
+        producer: (currentState: SC, newAction: AC) -> S
     ) {
-        val reducer: Reducer<S, A> = { currentState, newAction ->
+        reducerConditionsBuilders.add { currentState, newAction ->
             if (stateType.isInstance(currentState) &&
-                additionalStateCondition(currentState as T) &&
+                additionalStateCondition(currentState as SC) &&
                 actionType.isInstance(newAction) &&
-                additionalActionCondition(newAction as Z)) {
+                additionalActionCondition(newAction as AC)) {
                 producer(currentState, newAction)
             } else {
                 currentState
             }
         }
-        reducerConditionsBuilders.add(reducer)
     }
 
     infix fun <AC : A> ActionTypeWithCondition<AC>.produce(
@@ -85,12 +85,12 @@ class ReducerBuilder<S : Any, A : Any> {
 
     class StateTypeWithCondition<S : Any>(
         val stateType: KClass<S>,
-        val additionalCondition: (S) -> Boolean = { true }
+        val additionalCondition: (S) -> Boolean
     )
 
     class ActionTypeWithCondition<A : Any>(
         val actionType: KClass<A>,
-        val additionalCondition: (A) -> Boolean = { true }
+        val additionalCondition: (A) -> Boolean
     )
 
     class StateAndActionWithConditions<S : Any, A : Any>(
