@@ -29,6 +29,10 @@ class ReducerBuilder<S : Any, A : Any> {
         action.additionalCondition
     )
 
+    infix operator fun <T : S, Z : A> StateTypeWithCondition<T>.plus(
+        action: ActionTypeWithCondition<Z>
+    ) = and(action)
+
     infix fun <T : S> StateTypeWithCondition<T>.produce(
         producer: (state: T, action: A) -> S
     ) {
