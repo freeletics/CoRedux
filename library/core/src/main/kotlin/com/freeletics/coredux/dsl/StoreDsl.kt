@@ -17,7 +17,7 @@ fun <S : Any, A : Any> CoroutineScope.describeStore(
 class StoreBuilder<S : Any, A : Any>(
     private val coroutineScope: CoroutineScope
 ) {
-    private var logSinks: List<LogSink> = emptyList()
+    private var logSinks: MutableList<LogSink> = mutableListOf()
     private var startMode: CoroutineStart = CoroutineStart.LAZY
     private var storeName: String? = null
     private val reducerBuilder = ReducerBuilder<S, A>()
@@ -31,7 +31,7 @@ class StoreBuilder<S : Any, A : Any>(
             initialState = reducerBuilder.initialState,
             sideEffects = sideEffectsBuilder.build(),
             launchMode = startMode,
-            logSinks = logSinks,
+            logSinks = logSinks.toList(),
             reducer = reducerBuilder.build()
         )
     }
@@ -40,8 +40,12 @@ class StoreBuilder<S : Any, A : Any>(
         this.storeName = storeName
     }
 
-    fun enableLogging(logSinks: List<LogSink>) {
-        this.logSinks = logSinks
+    fun withLogger(logSink: LogSink) {
+        this.logSinks.add(logSink)
+    }
+
+    operator fun LogSink.unaryPlus() {
+        withLogger(this)
     }
 
     fun startImmediately() {
