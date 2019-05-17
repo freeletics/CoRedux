@@ -1,5 +1,8 @@
 # Changelog
 
+## [Unreleased]
+- Fix common log sink may crash on missed initial events (#63)
+
 ## [1.1.0] - 2019-05-02
 - Add common [LogSink] implementation
 - Add [Timber](https://github.com/JakeWharton/timber) [LogSink] implementation

@@ -16,6 +16,7 @@ dependencies {
     testImplementation testLibraries.spek2Dsl
     testImplementation testLibraries.junit
     testImplementation libraries.kotlinReflect
+    testImplementation testLibraries.coroutinesTest
     testRuntimeOnly testLibraries.spek2Junit5Runner
     testRuntimeOnly testLibraries.junit5Engine
 

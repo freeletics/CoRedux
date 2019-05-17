@@ -1,14 +1,13 @@
 package com.freeletics.coredux
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.channels.BroadcastChannel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.SendChannel
-import kotlinx.coroutines.channels.toChannel
 import kotlinx.coroutines.launch
 
 /**
@@ -145,22 +144,19 @@ sealed class LogEvent {
 @UseExperimental(ExperimentalCoroutinesApi::class, ObsoleteCoroutinesApi::class)
 internal class Logger(
     private val storeName: String,
-    private val scope: CoroutineScope,
-    private val logSinks: List<SendChannel<LogEntry>>
+    scope: CoroutineScope,
+    private val logSinks: List<SendChannel<LogEntry>>,
+    toLogSinksDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : SideEffectLogger {
     private val inputLogEventsChannel = Channel<LogEntry>(40)
-    private val broadcastChannel = BroadcastChannel<LogEntry>(logSinks.size + 1)
     private val loggingEnabled = logSinks.isNotEmpty()
 
     init {
         if (loggingEnabled) {
-            logSinks.forEach {
-                scope.launch(context = Dispatchers.Default) {
-                    broadcastChannel.openSubscription().toChannel(it)
+            scope.launch(context = toLogSinksDispatcher) {
+                for (event in inputLogEventsChannel) {
+                    logSinks.forEach { it.send(event) }
                 }
-            }
-            scope.launch(context = Dispatchers.Default) {
-                inputLogEventsChannel.toChannel(broadcastChannel)
             }
         }
     }
