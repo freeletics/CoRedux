@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [1.1.1] - 2019-05-17
 - Fix common log sink may crash on missed initial events (#63)
 
 ## [1.1.0] - 2019-05-02
