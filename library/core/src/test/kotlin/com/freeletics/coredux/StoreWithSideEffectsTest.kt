@@ -1,15 +1,12 @@
 package com.freeletics.coredux
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.TestCoroutineScope
 import org.junit.Assert.assertEquals
-import org.junit.Assert.fail
+import org.junit.Assert.assertTrue
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 
@@ -17,19 +14,24 @@ import org.spekframework.spek2.style.specification.describe
 @ExperimentalCoroutinesApi
 internal object StoreWithSideEffectsTest : Spek({
     describe("A redux store with only ${::stateLengthSE.name} side effect") {
+        val loadDelay = 100L
         val stateReceiver by memoized { TestStateReceiver<String>() }
-        val scope by memoized { CoroutineScope(Dispatchers.Default) }
+        val testScope by memoized { TestCoroutineScope(Job()) }
         val store by memoized {
-            scope.createStore(
+            testScope.createStore(
                 name = "Store with one side effect",
                 initialState = "",
-                sideEffects = listOf(stateLengthSE(lengthLimit = 2))
+                sideEffects = listOf(stateLengthSE(loadDelay = loadDelay, lengthLimit = 2))
             ) { currentState, newAction ->
                 currentState + newAction
             }
         }
 
         beforeEach { store.subscribe(stateReceiver) }
+        afterEach {
+            testScope.cancel()
+            testScope.cleanupTestCoroutines()
+        }
 
         it("should emit initial state") {
             stateReceiver.assertStates("")
@@ -45,22 +47,26 @@ internal object StoreWithSideEffectsTest : Spek({
                 )
             }
 
-            it("should emit \"11\" as a third state") {
-                stateReceiver.assertStates(
-                    "",
-                    "1",
-                    "11"
-                )
+            context("and if $loadDelay ms passed") {
+                beforeEach { testScope.advanceTimeBy(loadDelay) }
+
+                it("should emit \"11\" as a third state") {
+                    stateReceiver.assertStates(
+                        "",
+                        "1",
+                        "11"
+                    )
+                }
             }
 
-            context("and immediately on 5 action") {
-                beforeEach { store.dispatch(5) }
+            context("then immediately on 5 action and after $loadDelay ms passed") {
+                beforeEach {
+                    store.dispatch(5)
+                    testScope.advanceTimeBy(loadDelay)
+                }
 
                 it("should emit only 4 states") {
-                    try {
-                        val collectedState = stateReceiver.receivedStates(5)
-                        fail("Collected 5 states: $collectedState")
-                    } catch (e: TimeoutCancellationException) {}
+                    assertEquals(4, stateReceiver.stateUpdates.size)
                 }
 
                 it("should emit states in order") {
@@ -78,13 +84,13 @@ internal object StoreWithSideEffectsTest : Spek({
     describe("A redux store with many side effects") {
         val updateDelay = 100L
         val stateReceiver by memoized { TestStateReceiver<String>() }
-        val scope by memoized { CoroutineScope(Dispatchers.Default) }
+        val testScope by memoized { TestCoroutineScope(Job()) }
         val loggerSE by memoized { LoggerSE() }
         val stateLengthSE by memoized { stateLengthSE(lengthLimit = 4, loadDelay = 0L) }
         val multiplyActionSE by memoized { multiplyActionSE(updateDelay) }
         val logger by memoized { TestLogger() }
         val store by memoized {
-            scope.createStore(
+            testScope.createStore(
                 name = "Store with many side effects",
                 initialState = "",
                 logSinks = listOf(logger),
@@ -100,7 +106,11 @@ internal object StoreWithSideEffectsTest : Spek({
 
         beforeEach { store.subscribe(stateReceiver) }
 
-        afterEach { logger.close() }
+        afterEach {
+            testScope.cancel()
+            testScope.cleanupTestCoroutines()
+            logger.close()
+        }
 
         context("On 1 action") {
             beforeEach {
@@ -122,20 +132,14 @@ internal object StoreWithSideEffectsTest : Spek({
             }
 
             it("Should not receive more then ${expectedStates.size + 1} states") {
-                try {
-                    val collectedStates = stateReceiver.receivedStates(expectedStates.size + 1)
-                    fail("Received more then ${expectedStates.size + 1} states: $collectedStates")
-                } catch (e: TimeoutCancellationException) {}
+                assertTrue(stateReceiver.stateUpdates.size <= expectedStates.size)
             }
 
             it("${LoggerSE::class.simpleName} should receive all action in order") {
-                runBlocking {
-                    delay(1000)
-                    assertEquals(
-                        listOf(1, 1, 2, 3, 4),
-                        loggerSE.receivedActions
-                    )
-                }
+                assertEquals(
+                    listOf(1, 1, 2, 3, 4),
+                    loggerSE.receivedActions
+                )
             }
 
             val expectedLogEvents = listOf(
@@ -156,13 +160,11 @@ internal object StoreWithSideEffectsTest : Spek({
 
             context("And after ${updateDelay + 1} delay on second 100 action") {
                 beforeEach {
-                    scope.launch {
-                        delay(updateDelay + 1)
-                        store.dispatch(100)
-                    }
+                    store.dispatch(100)
+                    testScope.advanceTimeBy(updateDelay + 1)
                 }
 
-                val expectedStates = listOf(
+                val expectedStatesAfterDelay = listOf(
                     "",
                     "1",
                     "11",
@@ -173,16 +175,14 @@ internal object StoreWithSideEffectsTest : Spek({
                     "112341002000"
                 )
 
-                it("Should emit $expectedStates states in order") {
-                    stateReceiver.assertStates(*expectedStates.toTypedArray())
+                it("Should not emit more then ${expectedStatesAfterDelay.size + 1} states") {
+                    assertTrue(stateReceiver.stateUpdates.size <= expectedStatesAfterDelay.size)
                 }
 
-                it("Should not emit more then ${expectedStates.size + 1} states") {
-                    try {
-                        val collectedStates = stateReceiver.receivedStates(expectedStates.size + 1)
-                        fail("Received more then ${expectedStates.size + 1} states: $collectedStates")
-                    } catch (e: TimeoutCancellationException) {}
+                it("Should emit $expectedStatesAfterDelay states in order") {
+                    stateReceiver.assertStates(*expectedStatesAfterDelay.toTypedArray())
                 }
+
             }
         }
     }

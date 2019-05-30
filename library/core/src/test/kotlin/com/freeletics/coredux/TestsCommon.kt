@@ -2,15 +2,12 @@ package com.freeletics.coredux
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScope
 import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.withTimeout
@@ -64,33 +61,25 @@ internal fun multiplyActionSE(
     }
 }
 
-internal class TestStateReceiver<S> : StateReceiver<S> {
-    private val zeroTime = System.currentTimeMillis()
-    private val stateUpdates = mutableListOf<S>()
-
-    fun receivedStates(count: Int): List<S> {
-        val statesCollector = GlobalScope.async {
-                while (stateUpdates.size < count) {
-                    delay(10)
-                }
-
-            stateUpdates.toList()
-        }
-
-        return runBlocking { withTimeout(1000) { statesCollector.await() }}
-    }
+internal class TestStateReceiver<S>() : StateReceiver<S> {
+    private val _stateUpdates = mutableListOf<S>()
+    val stateUpdates get() = _stateUpdates.toList()
 
     fun assertStates(vararg expectedStates: S) {
-        val collectedStates = receivedStates(expectedStates.size)
+        val currentStateUpdates = stateUpdates
+        if (currentStateUpdates.size < expectedStates.size) {
+            throw IllegalStateException(
+                "Expected ${expectedStates.joinToString(prefix = "[", postfix = "]")} states, " +
+                "but actually received $currentStateUpdates"
+            )
+        }
+        val collectedStates = stateUpdates.subList(0, expectedStates.size)
         assertEquals(expectedStates.toList(), collectedStates)
     }
 
     override fun invoke(newState: S) {
-        println("+$timeDiff ms - Adding new state: $newState")
-        stateUpdates.add(newState)
+        _stateUpdates.add(newState)
     }
-
-    private val timeDiff get() = System.currentTimeMillis() - zeroTime
 }
 
 internal class TestStateAccessor<S>(
