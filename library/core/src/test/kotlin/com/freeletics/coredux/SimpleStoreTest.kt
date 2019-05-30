@@ -3,6 +3,7 @@ package com.freeletics.coredux
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -14,6 +15,7 @@ import org.junit.Assert.fail
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 
+@ObsoleteCoroutinesApi
 @UseExperimental(ExperimentalCoroutinesApi::class)
 object SimpleStoreTest : Spek({
     describe("A redux store without any side effects") {
@@ -33,8 +35,15 @@ object SimpleStoreTest : Spek({
             }
         }
 
+        afterEach {
+            testLogger.close()
+        }
+
         context("that has been subscribed immediately") {
-            beforeEach { store.subscribe(stateReceiver) }
+            beforeEach {
+                store.subscribe(stateReceiver)
+                testLogger.waitForLogEntries(3)
+            }
             afterEach { store.unsubscribe(stateReceiver) }
 
             it("should emit initial state") {
@@ -52,12 +61,13 @@ object SimpleStoreTest : Spek({
             context("On new action 1") {
                 beforeEach {
                     store.dispatch(1)
+                    testLogger.waitForLogEntries(4)
                 }
 
                 it("should first emit input action log event") {
                     assertEquals(
                         LogEvent.ReducerEvent.InputAction(1, ""),
-                        testLogger.receivedLogEntries(4)[3].event
+                        testLogger.receivedLogEntries[3].event
                     )
                 }
 
@@ -68,7 +78,7 @@ object SimpleStoreTest : Spek({
                 it("should last emit dispatch state log event") {
                     assertEquals(
                         LogEvent.ReducerEvent.DispatchState("1"),
-                        testLogger.receivedLogEntries(5)[4].event
+                        testLogger.receivedLogEntries[4].event
                     )
                 }
             }
@@ -101,7 +111,10 @@ object SimpleStoreTest : Spek({
 
         context("that is not subscribed") {
             context("on new action 1") {
-                beforeEach { store.dispatch(1) }
+                beforeEach {
+                    store.dispatch(1)
+                    testLogger.waitForLogEntries(1)
+                }
 
                 it("should emit store create as a first log event") {
                     testLogger.assertLogEvents(LogEvent.StoreCreated)

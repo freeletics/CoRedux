@@ -1,7 +1,9 @@
 package com.freeletics.coredux
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
@@ -9,6 +11,8 @@ import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.TestCoroutineScope
+import kotlinx.coroutines.test.runBlockingTest
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 
@@ -101,10 +105,19 @@ internal class StubSideEffectLogger : SideEffectLogger {
     override fun logSideEffectEvent(event: () -> LogEvent.SideEffectEvent) = Unit
 }
 
+@ExperimentalCoroutinesApi
+@ObsoleteCoroutinesApi
 internal class TestLogger : LogSink {
+    private val testScope = TestCoroutineScope()
     private val logEvents = mutableListOf<LogEntry>()
 
-    fun receivedLogEntries(count: Int) = runBlocking {
+    val receivedLogEntries get() = logEvents.toList()
+
+    fun close() {
+        testScope.cleanupTestCoroutines()
+    }
+
+    fun waitForLogEntries(count: Int) = testScope.runBlockingTest {
         withTimeout(1000) {
             while (logEvents.size < count) {
                 delay(10)
@@ -114,13 +127,13 @@ internal class TestLogger : LogSink {
     }
 
     fun assertLogEvents(vararg expected: LogEvent) {
-        val receivedLogEvents = receivedLogEntries(expected.size)
+        val receivedLogEvents = receivedLogEntries.subList(0, expected.size)
         expected.forEachIndexed { index, logEntry ->
             assertEquals(logEntry, receivedLogEvents[index].event)
         }
     }
 
-    override val sink: SendChannel<LogEntry> = GlobalScope.actor {
+    override val sink: SendChannel<LogEntry> = testScope.actor {
         while(true) {
             logEvents.add(receive())
         }

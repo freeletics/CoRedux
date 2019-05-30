@@ -2,6 +2,8 @@ package com.freeletics.coredux
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -11,6 +13,8 @@ import org.junit.Assert.fail
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 
+@ObsoleteCoroutinesApi
+@ExperimentalCoroutinesApi
 internal object StoreWithSideEffectsTest : Spek({
     describe("A redux store with only ${::stateLengthSE.name} side effect") {
         val stateReceiver by memoized { TestStateReceiver<String>() }
@@ -96,8 +100,13 @@ internal object StoreWithSideEffectsTest : Spek({
 
         beforeEach { store.subscribe(stateReceiver) }
 
+        afterEach { logger.close() }
+
         context("On 1 action") {
-            beforeEach { store.dispatch(1) }
+            beforeEach {
+                store.dispatch(1)
+                logger.waitForLogEntries(9)
+            }
 
             val expectedStates = listOf(
                 "",
