@@ -1,29 +1,29 @@
 package com.freeletics.coredux
 
 import junit.framework.TestCase.assertEquals
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
-import org.junit.Assert.fail
+import kotlinx.coroutines.test.TestCoroutineScope
+import kotlinx.coroutines.test.runBlockingTest
+import org.junit.Assert.assertTrue
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
 
 internal typealias SE = SimpleSideEffect<String, Int>
+private const val DEFAULT_DELAY = 10L
 
+@ExperimentalCoroutinesApi
 internal object SimpleSideEffectTest : Spek({
     describe("A ${SimpleSideEffect::class.simpleName}") {
-        val scope by memoized { CoroutineScope(Dispatchers.Default) }
+        val testScope by memoized { TestCoroutineScope() }
         val sideEffect by memoized {
             SE("test") { state, action, _, handler ->
                 val currentState = state()
                 when {
                     action == 1 && currentState == "" -> handler {
-                        delay(10)
+                        delay(DEFAULT_DELAY)
                         100
                     }
                     else -> null
@@ -36,83 +36,74 @@ internal object SimpleSideEffectTest : Spek({
         val logger by memoized { StubSideEffectLogger() }
 
         beforeEach {
-            scope.launch {
+            testScope.launch {
                 with (sideEffect) {
                     start(inputChannel, stateAccessor, outputChannel, logger)
                 }
             }
         }
 
+        afterEach { testScope.cleanupTestCoroutines() }
+
         context("when current state is not \"\"") {
             beforeEach { stateAccessor.setCurrentState("some-other-state") }
 
             context("and on new 1 action") {
-                beforeEach { scope.launch { inputChannel.send(1) } }
+                beforeEach {
+                    testScope.launch { inputChannel.send(1) }
+                    testScope.advanceTimeBy(DEFAULT_DELAY + 1)
+                }
 
                 it("should not call handler") {
-                    runBlocking {
-                        try {
-                            withTimeout(100) {
-                                val item = outputChannel.receive()
-                                fail("Received $item")
-                            }
-                        } catch (e: TimeoutCancellationException) {}
-                    }
+                    assertTrue(outputChannel.isEmpty)
                 }
             }
         }
 
         context("when current state is \"\"") {
             context("and on new 2 action") {
-                beforeEach { scope.launch { inputChannel.send(2) } }
+                beforeEach {
+                    testScope.launch { inputChannel.send(2) }
+                    testScope.advanceTimeBy(DEFAULT_DELAY + 1)
+                }
 
                 it("should not call handler") {
-                    runBlocking {
-                        try {
-                            withTimeout(100) {
-                                val item = outputChannel.receive()
-                                fail("Received $item")
-                            }
-                        } catch (e: TimeoutCancellationException) {}
-                    }
+                    assertTrue(outputChannel.isEmpty)
                 }
             }
 
             context("and on new 1 action") {
-                beforeEach { scope.launch { inputChannel.send(1) } }
+                beforeEach {
+                    testScope.launch { inputChannel.send(1) }
+                }
 
                 it("should send 100 action to output channel") {
-                    runBlocking {
-                        withTimeout(100) {
-                            val item = outputChannel.receive()
-                            assertEquals(100, item)
-                        }
+                    testScope.advanceTimeBy(DEFAULT_DELAY)
+                    testScope.runBlockingTest {
+                        assertEquals(100, outputChannel.receive())
                     }
                 }
 
                 context("and on second immediate 1 action") {
-                    beforeEach { scope.launch { inputChannel.send(1) } }
+                    beforeEach {
+                        testScope.advanceTimeBy(DEFAULT_DELAY / 10)
+                        testScope.launch { inputChannel.send(1) }
+                        testScope.advanceTimeBy(DEFAULT_DELAY)
+                    }
 
                     it("should send 100 action to output channel") {
-                        runBlocking {
-                            withTimeout(100) {
-                                val item = outputChannel.receive()
-                                assertEquals(100, item)
-                            }
+                        testScope.runBlockingTest {
+                            assertEquals(100, outputChannel.receive())
                         }
                     }
 
                     it("should cancel previous call to handler method") {
-                        runBlocking {
-                            withTimeout(100) {
-                                delay(30)
-                                val items = mutableListOf<Int>()
-                                (0..2).forEach { _ ->
-                                    outputChannel.poll()?.let { items.add(it) }
-                                }
-                                assertEquals(1, items.size)
-                            }
+                        val items = mutableListOf<Int>()
+                        repeat(3) {
+                            outputChannel.poll()?.let { items.add(it) }
+                            testScope.advanceTimeBy(DEFAULT_DELAY)
                         }
+                        assertEquals(1, items.size)
                     }
                 }
             }
