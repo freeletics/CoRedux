@@ -10,7 +10,7 @@ import org.spekframework.spek2.style.specification.describe
 class LoggerTest : Spek({
     describe("A Logger") {
         val storeName = "some-store"
-        val coroutineScope by memoized { TestCoroutineScope() }
+        val testScope by memoized { TestCoroutineScope() }
         val loggerDispatcher by memoized { TestCoroutineDispatcher() }
         val testLogSinks by memoized {
             listOf(
@@ -20,11 +20,13 @@ class LoggerTest : Spek({
             )
         }
 
+        afterEach { testScope.cleanupTestCoroutines() }
+
         context("when log sinks are available") {
             val logger by memoized {
                 Logger(
                     storeName,
-                    coroutineScope,
+                    testScope,
                     testLogSinks.map { it.sink },
                     loggerDispatcher
                 )
