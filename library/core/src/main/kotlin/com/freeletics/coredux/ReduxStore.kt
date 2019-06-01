@@ -1,8 +1,10 @@
 package com.freeletics.coredux
 
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
@@ -41,8 +43,30 @@ fun <S: Any, A: Any> CoroutineScope.createStore(
     launchMode: CoroutineStart = CoroutineStart.LAZY,
     logSinks: List<LogSink> = emptyList(),
     reducer: Reducer<S, A>
+): Store<S, A> = createStoreInternal(
+    name,
+    initialState,
+    sideEffects,
+    launchMode,
+    logSinks,
+    Dispatchers.Default,
+    reducer
+)
+
+/**
+ * Allows to override any store configuration.
+ */
+@UseExperimental(ExperimentalCoroutinesApi::class)
+internal fun <S: Any, A: Any> CoroutineScope.createStoreInternal(
+    name: String,
+    initialState: S,
+    sideEffects: List<SideEffect<S, A>> = emptyList(),
+    launchMode: CoroutineStart = CoroutineStart.LAZY,
+    logSinks: List<LogSink> = emptyList(),
+    logsDispatcher: CoroutineDispatcher = Dispatchers.Default,
+    reducer: Reducer<S, A>
 ): Store<S, A> {
-    val logger = Logger(name, this, logSinks.map { it.sink })
+    val logger = Logger(name, this, logSinks.map { it.sink }, logsDispatcher)
     val actionsReducerChannel = Channel<A>(Channel.UNLIMITED)
     val actionsSideEffectsChannel = BroadcastChannel<A>(sideEffects.size + 1)
 

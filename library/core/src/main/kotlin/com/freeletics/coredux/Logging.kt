@@ -2,7 +2,6 @@ package com.freeletics.coredux
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -146,7 +145,7 @@ internal class Logger(
     private val storeName: String,
     scope: CoroutineScope,
     private val logSinks: List<SendChannel<LogEntry>>,
-    toLogSinksDispatcher: CoroutineDispatcher = Dispatchers.Default
+    toLogSinksDispatcher: CoroutineDispatcher
 ) : SideEffectLogger {
     private val inputLogEventsChannel = Channel<LogEntry>(40)
     private val loggingEnabled = logSinks.isNotEmpty()

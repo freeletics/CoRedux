@@ -1,5 +1,6 @@
 package com.freeletics.coredux
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -88,12 +89,13 @@ internal object StoreWithSideEffectsTest : Spek({
         val loggerSE by memoized { LoggerSE() }
         val stateLengthSE by memoized { stateLengthSE(lengthLimit = 4, loadDelay = 0L) }
         val multiplyActionSE by memoized { multiplyActionSE(updateDelay) }
-        val logger by memoized { TestLogger() }
+        val logger by memoized { TestLogger(testScope) }
         val store by memoized {
-            testScope.createStore(
+            testScope.createStoreInternal(
                 name = "Store with many side effects",
                 initialState = "",
                 logSinks = listOf(logger),
+                logsDispatcher = Dispatchers.Unconfined,
                 sideEffects = listOf(
                     stateLengthSE,
                     loggerSE,
@@ -109,13 +111,11 @@ internal object StoreWithSideEffectsTest : Spek({
         afterEach {
             testScope.cancel()
             testScope.cleanupTestCoroutines()
-            logger.close()
         }
 
         context("On 1 action") {
             beforeEach {
                 store.dispatch(1)
-                logger.waitForLogEntries(9)
             }
 
             val expectedStates = listOf(

@@ -1,5 +1,6 @@
 package com.freeletics.coredux
 
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ObsoleteCoroutinesApi
@@ -21,12 +22,13 @@ object SimpleStoreTest : Spek({
     describe("A redux store without any side effects") {
         val testScope by memoized { TestCoroutineScope(Job()) }
         val stateReceiver by memoized { TestStateReceiver<String>() }
-        val testLogger by memoized { TestLogger() }
+        val testLogger by memoized { TestLogger(testScope) }
         val store by memoized {
-            testScope.createStore<String, Int>(
+            testScope.createStoreInternal<String, Int>(
                 name = "SimpleStore",
                 initialState = "",
-                logSinks = listOf(testLogger)
+                logSinks = listOf(testLogger),
+                logsDispatcher = Dispatchers.Unconfined
             ) { currentState, newAction ->
                 when {
                     newAction >= 0 -> newAction.toString()
@@ -36,14 +38,14 @@ object SimpleStoreTest : Spek({
         }
 
         afterEach {
-            testLogger.close()
+            testScope.cancel()
             testScope.cleanupTestCoroutines()
         }
 
         context("that has been subscribed immediately") {
             beforeEach {
                 store.subscribe(stateReceiver)
-                testLogger.waitForLogEntries(3)
+                testScope.advanceUntilIdle()
             }
 
             afterEach {
@@ -65,13 +67,12 @@ object SimpleStoreTest : Spek({
             context("On new action 1") {
                 beforeEach {
                     store.dispatch(1)
-                    testLogger.waitForLogEntries(4)
                 }
 
                 it("should first emit input action log event") {
                     assertEquals(
                         LogEvent.ReducerEvent.InputAction(1, ""),
-                        testLogger.receivedLogEntries[3].event
+                        testLogger.logEvents[3].event
                     )
                 }
 
@@ -82,7 +83,7 @@ object SimpleStoreTest : Spek({
                 it("should last emit dispatch state log event") {
                     assertEquals(
                         LogEvent.ReducerEvent.DispatchState("1"),
-                        testLogger.receivedLogEntries[4].event
+                        testLogger.logEvents[4].event
                     )
                 }
             }
@@ -117,7 +118,6 @@ object SimpleStoreTest : Spek({
             context("on new action 1") {
                 beforeEach {
                     store.dispatch(1)
-                    testLogger.waitForLogEntries(1)
                 }
 
                 it("should emit store create as a first log event") {

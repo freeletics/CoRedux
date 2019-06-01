@@ -15,13 +15,12 @@ class LoggerTest : Spek({
         val testScope by memoized { TestCoroutineScope() }
         val loggerDispatcher by memoized { TestCoroutineDispatcher() }
         val testLoggers by memoized { listOf(
-            TestLogger(),
-            TestLogger(),
-            TestLogger()
+            TestLogger(testScope),
+            TestLogger(testScope),
+            TestLogger(testScope)
         ) }
 
         afterEach {
-            testLoggers.forEach { it.close() }
             testScope.cleanupTestCoroutines()
         }
 
