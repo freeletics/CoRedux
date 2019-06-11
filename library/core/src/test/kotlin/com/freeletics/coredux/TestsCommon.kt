@@ -1,15 +1,14 @@
 package com.freeletics.coredux
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.channels.actor
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.test.TestCoroutineScope
 import org.junit.Assert.assertEquals
 
 internal fun stateLengthSE(
@@ -61,32 +60,22 @@ internal fun multiplyActionSE(
 }
 
 internal class TestStateReceiver<S> : StateReceiver<S> {
-    private val zeroTime = System.currentTimeMillis()
-    private val stateUpdates = mutableListOf<S>()
-
-    fun receivedStates(count: Int): List<S> {
-        val statesCollector = GlobalScope.async {
-                while (stateUpdates.size < count) {
-                    delay(10)
-                }
-
-            stateUpdates.toList()
-        }
-
-        return runBlocking { withTimeout(1000) { statesCollector.await() }}
-    }
+    private val _stateUpdates = mutableListOf<S>()
+    val stateUpdates get() = _stateUpdates.toList()
 
     fun assertStates(vararg expectedStates: S) {
-        val collectedStates = receivedStates(expectedStates.size)
+        val currentStateUpdates = stateUpdates
+        require (expectedStates.size <= currentStateUpdates.size) {
+            "Expected ${expectedStates.joinToString(prefix = "[", postfix = "]")} states, " +
+                "but actually received $currentStateUpdates"
+        }
+        val collectedStates = stateUpdates.subList(0, expectedStates.size)
         assertEquals(expectedStates.toList(), collectedStates)
     }
 
     override fun invoke(newState: S) {
-        println("+$timeDiff ms - Adding new state: $newState")
-        stateUpdates.add(newState)
+        _stateUpdates.add(newState)
     }
-
-    private val timeDiff get() = System.currentTimeMillis() - zeroTime
 }
 
 internal class TestStateAccessor<S>(
@@ -101,28 +90,28 @@ internal class StubSideEffectLogger : SideEffectLogger {
     override fun logSideEffectEvent(event: () -> LogEvent.SideEffectEvent) = Unit
 }
 
-internal class TestLogger : LogSink {
-    private val logEvents = mutableListOf<LogEntry>()
-
-    fun receivedLogEntries(count: Int) = runBlocking {
-        withTimeout(1000) {
-            while (logEvents.size < count) {
-                delay(10)
-            }
-            logEvents.toList()
-        }
-    }
+@ExperimentalCoroutinesApi
+@ObsoleteCoroutinesApi
+internal class TestLogger(
+    testScope: TestCoroutineScope
+) : LogSink {
+    private val _logEvents = mutableListOf<LogEntry>()
+    val logEvents get() = _logEvents.toList()
 
     fun assertLogEvents(vararg expected: LogEvent) {
-        val receivedLogEvents = receivedLogEntries(expected.size)
+        val receivedLogEvents = logEvents
+        require (expected.size <= receivedLogEvents.size) {
+            "Expected ${expected.joinToString(prefix = "[", postfix = "]")} log events, " +
+                "but actually received $receivedLogEvents"
+        }
         expected.forEachIndexed { index, logEntry ->
             assertEquals(logEntry, receivedLogEvents[index].event)
         }
     }
 
-    override val sink: SendChannel<LogEntry> = GlobalScope.actor {
-        while(true) {
-            logEvents.add(receive())
+    override val sink: SendChannel<LogEntry> = testScope.actor {
+        while (true) {
+            _logEvents.add(receive())
         }
     }
 }
