@@ -27,7 +27,7 @@ ext.versions = [
         supportConstraintLayout: '1.1.3',
 
         junit                  : '4.12',
-        junit5                 : '1.5.1',
+        junit5                 : '1.5.2',
         spek2                  : '2.0.6',
         kotlinMockito          : '1.5.0',
         assertJ                : '3.8.0',
