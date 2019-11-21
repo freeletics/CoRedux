@@ -15,7 +15,7 @@ ext.versions = [
         coroutines             : '1.2.2',
         rxJava                 : '2.2.14',
         rxBinding              : '2.2.0',
-        okhttp                 : '4.1.0',
+        okhttp                 : '4.2.2',
 
         retrofit               : '2.6.2',
         retrofitCoroutines     : '0.9.2',
