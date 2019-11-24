@@ -37,18 +37,18 @@ object SimpleStoreTest : Spek({
             }
         }
 
-        afterEach {
+        afterEachTest {
             testScope.cancel()
             testScope.cleanupTestCoroutines()
         }
 
         context("that has been subscribed immediately") {
-            beforeEach {
+            beforeEachTest {
                 store.subscribe(stateReceiver)
                 testScope.advanceUntilIdle()
             }
 
-            afterEach {
+            afterEachTest {
                 store.unsubscribe(stateReceiver)
             }
 
@@ -65,7 +65,7 @@ object SimpleStoreTest : Spek({
             }
 
             context("On new action 1") {
-                beforeEach {
+                beforeEachTest {
                     store.dispatch(1)
                 }
 
@@ -89,7 +89,7 @@ object SimpleStoreTest : Spek({
             }
 
             context("when scope is cancelled") {
-                beforeEach {
+                beforeEachTest {
                     testScope.cancel()
                     // Cancel is wait scope child jobs to cancel itself, so adding small delay to remove test flakiness
                     runBlocking { delay(10) }
@@ -106,7 +106,7 @@ object SimpleStoreTest : Spek({
 
             context("on actions from 0 to 100 send immediately") {
                 val actions = (0..50)
-                beforeEach { actions.forEach { store.dispatch(it) } }
+                beforeEachTest { actions.forEach { store.dispatch(it) } }
 
                 it("store should process them in send order") {
                     stateReceiver.assertStates("", *actions.map { it.toString() }.toTypedArray())
@@ -116,7 +116,7 @@ object SimpleStoreTest : Spek({
 
         context("that is not subscribed") {
             context("on new action 1") {
-                beforeEach {
+                beforeEachTest {
                     store.dispatch(1)
                 }
 
@@ -125,7 +125,7 @@ object SimpleStoreTest : Spek({
                 }
 
                 context("and when new subscriber subscribes") {
-                    beforeEach { store.subscribe(stateReceiver) }
+                    beforeEachTest { store.subscribe(stateReceiver) }
 
                     it("subscriber should receive initial and 1 state") {
                         stateReceiver.assertStates("", "1")
@@ -134,7 +134,7 @@ object SimpleStoreTest : Spek({
                     val secondStateReceiver by memoized { TestStateReceiver<String>() }
 
                     context("and when second subscriber subscribes after 1 ms") {
-                        beforeEach {
+                        beforeEachTest {
                             testScope.runBlockingTest {
                                 delay(10)
                                 store.subscribe(secondStateReceiver)
@@ -146,7 +146,7 @@ object SimpleStoreTest : Spek({
                         }
 
                         context("On new action 2") {
-                            beforeEach {
+                            beforeEachTest {
                                 store.dispatch(2)
                             }
 

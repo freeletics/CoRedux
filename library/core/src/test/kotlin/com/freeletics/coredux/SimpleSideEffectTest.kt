@@ -35,7 +35,7 @@ internal object SimpleSideEffectTest : Spek({
         val stateAccessor by memoized { TestStateAccessor("") }
         val logger by memoized { StubSideEffectLogger() }
 
-        beforeEach {
+        beforeEachTest {
             testScope.launch {
                 with (sideEffect) {
                     start(inputChannel, stateAccessor, outputChannel, logger)
@@ -43,13 +43,13 @@ internal object SimpleSideEffectTest : Spek({
             }
         }
 
-        afterEach { testScope.cleanupTestCoroutines() }
+        afterEachTest { testScope.cleanupTestCoroutines() }
 
         context("when current state is not \"\"") {
-            beforeEach { stateAccessor.setCurrentState("some-other-state") }
+            beforeEachTest { stateAccessor.setCurrentState("some-other-state") }
 
             context("and on new 1 action") {
-                beforeEach {
+                beforeEachTest {
                     testScope.launch { inputChannel.send(1) }
                     testScope.advanceTimeBy(DEFAULT_DELAY + 1)
                 }
@@ -62,7 +62,7 @@ internal object SimpleSideEffectTest : Spek({
 
         context("when current state is \"\"") {
             context("and on new 2 action") {
-                beforeEach {
+                beforeEachTest {
                     testScope.launch { inputChannel.send(2) }
                     testScope.advanceTimeBy(DEFAULT_DELAY + 1)
                 }
@@ -73,7 +73,7 @@ internal object SimpleSideEffectTest : Spek({
             }
 
             context("and on new 1 action") {
-                beforeEach {
+                beforeEachTest {
                     testScope.launch { inputChannel.send(1) }
                 }
 
@@ -85,7 +85,7 @@ internal object SimpleSideEffectTest : Spek({
                 }
 
                 context("and on second immediate 1 action") {
-                    beforeEach {
+                    beforeEachTest {
                         testScope.advanceTimeBy(DEFAULT_DELAY / 10)
                         testScope.launch { inputChannel.send(1) }
                         testScope.advanceTimeBy(DEFAULT_DELAY)

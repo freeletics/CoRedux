@@ -11,10 +11,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestCoroutineScope
 import org.junit.Assert.assertEquals
 
+internal const val STATE_LENGTH_SE_NAME = "stateLengthSE"
+
 internal fun stateLengthSE(
     lengthLimit: Int = 10,
     loadDelay: Long = 100L
-) = SimpleSideEffect<String, Int>("stateLengthSE") { state, _, _, handler ->
+) = SimpleSideEffect<String, Int>(STATE_LENGTH_SE_NAME) { state, _, _, handler ->
     val currentStateLength = state().length
     if (currentStateLength <= lengthLimit) {
         handler {
@@ -26,8 +28,10 @@ internal fun stateLengthSE(
     }
 }
 
-class LoggerSE: SideEffect<String, Int> {
-    override val name: String = "LoggerSE"
+internal const val LOGGER_SE_NAME = "LoggerSE"
+
+internal class LoggerSE: SideEffect<String, Int> {
+    override val name: String = LOGGER_SE_NAME
 
     private val recordedActions = mutableListOf<Int>()
 
@@ -45,9 +49,11 @@ class LoggerSE: SideEffect<String, Int> {
     }
 }
 
+internal const val MULTIPLY_ACTION_SE_NAME = "multiplyActionSE"
+
 internal fun multiplyActionSE(
     produceDelay: Long = 100L
-) = CancellableSideEffect<String, Int>("multiplyActionSE") { _, action, _, handler ->
+) = CancellableSideEffect<String, Int>(MULTIPLY_ACTION_SE_NAME) { _, action, _, handler ->
     when (action) {
         in 100..1000 -> handler { _, output ->
             launch {

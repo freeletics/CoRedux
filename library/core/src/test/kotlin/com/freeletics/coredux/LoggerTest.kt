@@ -20,7 +20,7 @@ class LoggerTest : Spek({
             TestLogger(testScope)
         ) }
 
-        afterEach {
+        afterEachTest {
             testScope.cleanupTestCoroutines()
         }
 
@@ -35,12 +35,12 @@ class LoggerTest : Spek({
             }
 
             context("and to log sinks dispatcher is busy") {
-                beforeEach {
+                beforeEachTest {
                     loggerDispatcher.pauseDispatcher()
                 }
 
                 context("on receiving first events") {
-                    beforeEach {
+                    beforeEachTest {
                         logger.logEvent { LogEvent.StoreCreated }
                         logger.logEvent { LogEvent.ReducerEvent.Start }
                         loggerDispatcher.resumeDispatcher()

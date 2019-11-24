@@ -36,7 +36,7 @@ object CancellableSideEffectTest : Spek({
         val stateAccessor by memoized { TestStateAccessor("") }
         val logger by memoized { StubSideEffectLogger() }
 
-        beforeEach {
+        beforeEachTest {
             testScope.launch {
                 with(sideEffect) {
                     start(inputChannel, stateAccessor, outputChannel, logger)
@@ -44,13 +44,13 @@ object CancellableSideEffectTest : Spek({
             }
         }
 
-        afterEach { testScope.cleanupTestCoroutines() }
+        afterEachTest { testScope.cleanupTestCoroutines() }
 
         context("when current state is not \"\"") {
-            beforeEach { stateAccessor.setCurrentState("some-other-state") }
+            beforeEachTest { stateAccessor.setCurrentState("some-other-state") }
 
             context("and on new 1 action") {
-                beforeEach {
+                beforeEachTest {
                     testScope.launch { inputChannel.send(1) }
                     testScope.advanceTimeBy(DEFAULT_DELAY_MS + 1)
                 }
@@ -63,7 +63,7 @@ object CancellableSideEffectTest : Spek({
 
         context("when current state is \"\"") {
             context("and on new 2 action") {
-                beforeEach {
+                beforeEachTest {
                     testScope.launch { inputChannel.send(2) }
                     testScope.advanceTimeBy(DEFAULT_DELAY_MS + 1)
                 }
@@ -75,7 +75,7 @@ object CancellableSideEffectTest : Spek({
         }
 
         context("and on new 1 action") {
-            beforeEach { testScope.launch { inputChannel.send(1) } }
+            beforeEachTest { testScope.launch { inputChannel.send(1) } }
 
             it("should send 2, 3, 4 actions to output channel") {
                 val items = mutableListOf<Int>()
@@ -87,7 +87,7 @@ object CancellableSideEffectTest : Spek({
             }
 
             context("and on second immediate 1 action") {
-                beforeEach { testScope.launch { inputChannel.send(1) } }
+                beforeEachTest { testScope.launch { inputChannel.send(1) } }
 
                 it("should send 2, 3, 4 actions to output channel") {
                     val items = mutableListOf<Int>()

@@ -17,7 +17,13 @@ internal object StoreWithSideEffectsTest : Spek({
     describe("A redux store with only ${::stateLengthSE.name} side effect") {
         val loadDelay = 100L
         val stateReceiver by memoized { TestStateReceiver<String>() }
-        val testScope by memoized { TestCoroutineScope(Job()) }
+        val testScope by memoized(
+            factory =  { TestCoroutineScope(Job()) },
+            destructor = {
+                it.cancel()
+                it.cleanupTestCoroutines()
+            }
+        )
         val store by memoized {
             testScope.createStore(
                 name = "Store with one side effect",
@@ -28,18 +34,14 @@ internal object StoreWithSideEffectsTest : Spek({
             }
         }
 
-        beforeEach { store.subscribe(stateReceiver) }
-        afterEach {
-            testScope.cancel()
-            testScope.cleanupTestCoroutines()
-        }
+        beforeEachTest { store.subscribe(stateReceiver) }
 
         it("should emit initial state") {
             stateReceiver.assertStates("")
         }
 
         context("on 1 action") {
-            beforeEach { store.dispatch(1) }
+            beforeEachTest { store.dispatch(1) }
 
             it("reducer should react first with \"1\" state") {
                 stateReceiver.assertStates(
@@ -49,7 +51,7 @@ internal object StoreWithSideEffectsTest : Spek({
             }
 
             context("and if $loadDelay ms passed") {
-                beforeEach { testScope.advanceTimeBy(loadDelay) }
+                beforeEachTest { testScope.advanceTimeBy(loadDelay) }
 
                 it("should emit \"11\" as a third state") {
                     stateReceiver.assertStates(
@@ -61,7 +63,7 @@ internal object StoreWithSideEffectsTest : Spek({
             }
 
             context("then immediately on 5 action and after $loadDelay ms passed") {
-                beforeEach {
+                beforeEachTest {
                     store.dispatch(5)
                     testScope.advanceTimeBy(loadDelay)
                 }
@@ -85,7 +87,13 @@ internal object StoreWithSideEffectsTest : Spek({
     describe("A redux store with many side effects") {
         val updateDelay = 100L
         val stateReceiver by memoized { TestStateReceiver<String>() }
-        val testScope by memoized { TestCoroutineScope(Job()) }
+        val testScope by memoized(
+            factory =  { TestCoroutineScope(Job()) },
+            destructor = {
+                it.cancel()
+                it.cleanupTestCoroutines()
+            }
+        )
         val loggerSE by memoized { LoggerSE() }
         val stateLengthSE by memoized { stateLengthSE(lengthLimit = 4, loadDelay = 0L) }
         val multiplyActionSE by memoized { multiplyActionSE(updateDelay) }
@@ -106,15 +114,12 @@ internal object StoreWithSideEffectsTest : Spek({
             }
         }
 
-        beforeEach { store.subscribe(stateReceiver) }
-
-        afterEach {
-            testScope.cancel()
-            testScope.cleanupTestCoroutines()
+        beforeEachTest {
+            store.subscribe(stateReceiver)
         }
 
         context("On 1 action") {
-            beforeEach {
+            beforeEachTest {
                 store.dispatch(1)
             }
 
@@ -146,9 +151,9 @@ internal object StoreWithSideEffectsTest : Spek({
                 LogEvent.StoreCreated,
                 LogEvent.ReducerEvent.Start,
                 LogEvent.ReducerEvent.DispatchState(""),
-                LogEvent.SideEffectEvent.Start(stateLengthSE.name),
-                LogEvent.SideEffectEvent.Start(loggerSE.name),
-                LogEvent.SideEffectEvent.Start(multiplyActionSE.name),
+                LogEvent.SideEffectEvent.Start(STATE_LENGTH_SE_NAME),
+                LogEvent.SideEffectEvent.Start(LOGGER_SE_NAME),
+                LogEvent.SideEffectEvent.Start(MULTIPLY_ACTION_SE_NAME),
                 LogEvent.ReducerEvent.InputAction(1, ""),
                 LogEvent.ReducerEvent.DispatchState("1"),
                 LogEvent.ReducerEvent.DispatchToSideEffects(1)
@@ -159,7 +164,7 @@ internal object StoreWithSideEffectsTest : Spek({
             }
 
             context("And after ${updateDelay + 1} delay on second 100 action") {
-                beforeEach {
+                beforeEachTest {
                     store.dispatch(100)
                     testScope.advanceTimeBy(updateDelay + 1)
                 }
