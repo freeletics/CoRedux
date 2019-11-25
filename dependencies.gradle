@@ -33,7 +33,7 @@ ext.versions = [
         assertJ                : '3.8.0',
         espresso               : '3.0.2',
         testRunner             : '1.0.2',
-        screengrab             : '1.2.0',
+        screengrab             : '2.0.0',
         deviceAnimationRule    : '0.0.2',
 ]
 
