@@ -11,7 +11,7 @@ ext.versions = [
         dokka                  : '0.9.17',
 
         dagger                 : '2.24',
-        kotlin                 : '1.3.60',
+        kotlin                 : '1.3.61',
         coroutines             : '1.3.2',
         rxJava                 : '2.2.14',
         rxBinding              : '2.2.0',
