@@ -6,7 +6,7 @@ ext.versions = [
 
         gradle                 : "5.4.1",
 
-        shot                   : '3.0.2',
+        shot                   : '5.3.0',
         mavenPublish           : '0.8.0',
         dokka                  : '0.9.17',
 
