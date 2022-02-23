@@ -1,3 +1,8 @@
+# Deprecated
+
+This library was an experiment from the early days of coroutines when `Flow` did not exist. Take a look at [FlowRedux](https://github.com/freeletics/flowredux) for our maintained coroutines based redux implementation.
+
+
 # CoRedux
 
 Opinionated [Redux](https://redux.js.org/) implementation using [Kotlin](https://kotlinlang.org/) [coroutines](https://github.com/Kotlin/kotlinx.coroutines) inspired by [RxRedux](https://github.com/freeletics/rxredux).
